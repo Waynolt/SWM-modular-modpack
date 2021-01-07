@@ -6,7 +6,7 @@ https://www.rebornevo.com/forums/topic/24930-swm-modular-modpack-e1840
 
 <br />
 
-This modpack is for **Pokemon Reborn**; if you're looking for a Rejuvenation-compatible version, you can find it here:<br />
+This modpack is for **Reborn**; if you're looking for a Rejuvenation-compatible version, you can find it here:<br />
 http://www.rebornevo.com/forum/index.php?/topic/33807-rejuvenation-modular-modpack-v11-patch-3/
 
 <br />
@@ -22,14 +22,14 @@ http://www.rebornevo.com/forum/index.php?/topic/40480-aironfaars-mod-box-e181upd
 
 ## <span style="color:purple"> **Installation** </span>
 
-To **install**, just drop the folder "Mods" into the folder "[Pokemon Reborn]\Data\"<br />
-(In the end you should have a "[Pokemon Reborn]\Data\Mods" folder with a bunch of files inside.)<br />
+To **install**, just drop the folder "**Mods**" into the folder "**[Reborn]\Data**"<br />
+(In the end you should have a "**[Reborn]\Data\Mods**" folder with a bunch of files inside.)<br />
 This video from **Lostelle** explains it, showing each step required: https://www.youtube.com/watch?v=6hc3Mo432C0
 <br />
  
-If playing on a Mac with Wineskin, then, as **Tacos** suggests, do all the modding in a Reborn folder outside of the wrapper and then make a new wrapper with that folder.
+If playing on a **Mac** with **Wineskin**, then, as **Tacos** suggests, do all the modding in a Reborn folder outside of the wrapper and then make a new wrapper with that folder.
 
-Every component is stand-alone, and can be used on its own; please refer to the "brief summary" below for more info on each one.
+Every component is **stand-alone**, and can be used on its own; please refer to the "**brief summary**" below for more info on each one.
 
 <br />
 
@@ -49,7 +49,7 @@ Every component is stand-alone, and can be used on its own; please refer to the 
 * "**SWM - AAA**": this component is a trap, and its purpose is to crash the game.<br />
 It only exists to force people to read this section. 😛
 
-(Please read below anyway... many of these mods change the gameplay, and you should at least know about what you have installed.)
+(**Please read below anyway... many of these mods change the gameplay, and you should at least know about what you have installed.**)
 <br />
 
 * "**SWM - BagSortByType**" adds a "sort by type" option when sorting the bag; alphabetical sorting is still available.<br />
@@ -124,12 +124,12 @@ To use them, download the .png image attached to the linked post and use it to r
 * "**SWM - SharedPC**" makes the last box in the PC shared amongst savegames: mons you put in it will be there if you start a new game or load a different savegame.
 <br />
 
-* "**SWM - ShowStatBoosts**" shows each pokemon's stat stages in battle.<br />
+* "**SWM - ShowStatBoosts**" shows each mon's stat stages in battle.<br />
 (Alternative graphics by **Player_Null_Name**  : http://www.rebornevo.com/forum/index.php?/topic/24930-swm-modular-modpack-e18/&amp;do=findComment&amp;comment=805921 <br />
 To use them, download the .png image attached to the linked post and use it to replace the mod's default "SWM - ShowStatBoosts.png" file)
 <br />
 
-* "**SWM - TypeBattleIcons**" shows each pokemon's type in battle.
+* "**SWM - TypeBattleIcons**" shows each mon's type in battle.
 <br />
 
 * "**SWM - UnrealClock**" shows the current in-game time.
@@ -163,7 +163,7 @@ https://drive.google.com/open?id=1iuvk4uLSRV4VEMF0Gp5wdv9d5MmlZ-ez
 
 * None yet.
 
-* The Follower Pokemon mod used to require a compatibility patch in E17, but in E18 it may no longer be the case.
+* The Follower mod used to require a compatibility patch in E17, but in E18 it may no longer be the case.
 
 * The Sandbox Mode mod used to require a compatibility patch too in E17, but in E18 it is fully compatible.
 
@@ -392,7 +392,7 @@ v28
 
 
 v27
-* Fixed interaction between EggPicking and the Follower Pokemon mod.
+* Fixed interaction between EggPicking and the Follower mod.
 
 
 v26
