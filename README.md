@@ -1,20 +1,17 @@
 # SWM Modular Modpack
 ​
 ## <span style="color:red"> **Disclaimer** </span>
-PLEASE MAKE A POST IN THE REBORN EVO FORUM IF YOU HAVE ISSUES WITH ANY OF THESE MODS.
-
+PLEASE MAKE A POST IN THE REBORN EVO FORUM IF YOU HAVE ISSUES WITH ANY OF THESE MODS.<br />
 https://www.rebornevo.com/forums/topic/24930-swm-modular-modpack-e1840
 
 <br />
 
-This modpack is for **Pokemon Reborn**; if you're looking for a Rejuvenation-compatible version, you can find it here:
-
+This modpack is for **Pokemon Reborn**; if you're looking for a Rejuvenation-compatible version, you can find it here:<br />
 http://www.rebornevo.com/forum/index.php?/topic/33807-rejuvenation-modular-modpack-v11-patch-3/
 
 <br />
 
-Also, some of the components in the modpack have **additional settings** that can be managed with this:
-
+Also, some of the components in the modpack have **additional settings** that can be managed with this:<br />
 http://www.rebornevo.com/forum/index.php?/topic/40480-aironfaars-mod-box-e181updated-2018-08-23/
 
 <br />
@@ -25,11 +22,10 @@ http://www.rebornevo.com/forum/index.php?/topic/40480-aironfaars-mod-box-e181upd
 
 ## <span style="color:purple"> **Installation** </span>
 
-To **install**, just drop the folder "Mods" into the folder "[Pokemon Reborn]\Data\"
-
-(At the end you should have a "[Pokemon Reborn]\Data\Mods" folder with a bunch of files inside.)
+To **install**, just drop the folder "Mods" into the folder "[Pokemon Reborn]\Data\"<br />
+(In the end you should have a "[Pokemon Reborn]\Data\Mods" folder with a bunch of files inside.)<br />
 This video from **Lostelle** explains it, showing each step required: https://www.youtube.com/watch?v=6hc3Mo432C0
-
+<br />
  
 If playing on a Mac with Wineskin, then, as **Tacos** suggests, do all the modding in a Reborn folder outside of the wrapper and then make a new wrapper with that folder.
 
