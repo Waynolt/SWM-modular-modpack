@@ -25,7 +25,9 @@ http://www.rebornevo.com/forum/index.php?/topic/40480-aironfaars-mod-box-e181upd
 To **install**, just drop the folder "**Mods**" into the folder "**[Reborn]\Data**"<br />
 (In the end you should have a "**[Reborn]\Data\Mods**" folder with a bunch of files inside.)<br />
 This video from **Lostelle** explains it, showing each step required: https://www.youtube.com/watch?v=6hc3Mo432C0 <br />
-<iframe width="560" height="315" src="https://www.youtube.com/embed/6hc3Mo432C0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/6hc3Mo432C0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen />
+
 <br />
  
 If playing on a **Mac** with **Wineskin**, then, as **Tacos** suggests, do all the modding in a Reborn folder outside of the wrapper and then make a new wrapper with that folder.
