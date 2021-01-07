@@ -153,7 +153,7 @@ To use them, download the .png image attached to the linked post and use it to r
 ## <span style="color:green"> **Compatibility with other mods** </span>
 
 
-Last version of SWM (v59) to be compatible with mods based on **Reborn Episode 18.1**:
+Last version of SWM (v59) to be compatible with mods based on **Reborn Episode 18.1**:<br />
 https://drive.google.com/open?id=1iuvk4uLSRV4VEMF0Gp5wdv9d5MmlZ-ez
 
 <br />
