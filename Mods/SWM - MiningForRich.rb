@@ -125,31 +125,33 @@ class MiningGameCounter < BitmapSprite
 	
     #####MODDED
     #Let the player know what's happening
-    if @hits >= 48 && defined?($aMiningCost)
-      if $aMiningCost > 0
-        #Next cost
+    if defined?($aMiningCost)
+      #Next cost
+      if @hits >= 48
         if defined?($PokemonSystem.additionalMiningCost)
           aMineCost = $PokemonSystem.additionalMiningCost
         else
           aMineCost = 10
         end
-        sTxt1 = _INTL("Next hit will cost ${1} +${2} (pick) or +${3} (hammer)", $aMiningCost, aMineCost, 2*aMineCost)
-        
-        #Current money
-        sTxt2 = _INTL("You still have ${1}", $Trainer.money)
-        
-        #Print it
-        sTxt = sTxt1+sTxt2
-        $aOldMiningTxt = "" if !defined?($aOldMiningTxt)
-        if sTxt != $aOldMiningTxt || !defined?($aMiningBmp1) || $aMiningBmp1.disposed? || !defined?($aMiningBmp2) || $aMiningBmp2.disposed?
-          $aOldMiningTxt = sTxt
-          
-          $aMiningBmp1 = aGetDrawnTextWOutline(2, sTxt1)
-          $aMiningBmp2 = aGetDrawnTextWOutline(2, sTxt2)
-        end
-        self.bitmap.blt(5, 0, $aMiningBmp1, $aMiningBmp1.rect)
-        self.bitmap.blt(5, 25, $aMiningBmp2, $aMiningBmp2.rect)
+      else
+        aMineCost = 0
       end
+      sTxt1 = _INTL("Next hit will cost ${1} +${2} (pick) or +${3} (hammer)", $aMiningCost, aMineCost, 2*aMineCost)
+      
+      #Current money
+      sTxt2 = _INTL("You still have ${1}", $Trainer.money)
+      
+      #Print it
+      sTxt = sTxt1+sTxt2
+      $aOldMiningTxt = "" if !defined?($aOldMiningTxt)
+      if sTxt != $aOldMiningTxt || !defined?($aMiningBmp1) || $aMiningBmp1.disposed? || !defined?($aMiningBmp2) || $aMiningBmp2.disposed?
+        $aOldMiningTxt = sTxt
+        
+        $aMiningBmp1 = aGetDrawnTextWOutline(2, sTxt1)
+        $aMiningBmp2 = aGetDrawnTextWOutline(2, sTxt2)
+      end
+      self.bitmap.blt(5, 0, $aMiningBmp1, $aMiningBmp1.rect)
+      self.bitmap.blt(5, 25, $aMiningBmp2, $aMiningBmp2.rect)
     end
     #####/MODDED
   end
