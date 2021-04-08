@@ -141,7 +141,7 @@ class MiningGameCounter < BitmapSprite
         #Print it
         sTxt = sTxt1+sTxt2
         $aOldMiningTxt = "" if !defined?($aOldMiningTxt)
-        if sTxt != $aOldMiningTxt
+        if sTxt != $aOldMiningTxt || !defined?($aMiningBmp1) || $aMiningBmp1.disposed? || !defined?($aMiningBmp2) || $aMiningBmp2.disposed?
           $aOldMiningTxt = sTxt
           
           $aMiningBmp1 = aGetDrawnTextWOutline(2, sTxt1)
