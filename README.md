@@ -77,7 +77,6 @@ If you do not have an ExpShare in your bag (i.e. you haven't found it yet, or yo
 * "**SWM - ItemRadar**" changes the ItemFinder so that, when activated, it stays on and marks hidden items on the game map.<br />
 (Alternative graphics by **Player_Null_Name**  : http://www.rebornevo.com/forum/index.php?/topic/24930-swm-modular-modpack-e18/&amp;do=findComment&amp;comment=808102 <br />
 Alternative graphics by **Xander** : https://www.rebornevo.com/forum/index.php?/topic/24930-swm-modular-modpack-e18/&amp;do=findComment&amp;comment=835844 <br />
-
 To use them, download the .png image attached to the linked post and use it to replace the mod's default "SWM - ItemRadar.png" file)
 <br />
 
@@ -85,6 +84,9 @@ To use them, download the .png image attached to the linked post and use it to r
 <br />
 
 * "**SWM - LearnEggMoves**" lets the move relearner teach any egg move.
+<br />
+
+* "**SWM - LocalSavegames**" moves the savegame folder inside of Reborn's folder.
 <br />
 
 * "**SWM - MiningForRich**": while mining the wall won't collapse, but mining further costs cumulatively more and more money (spent on materials to build a tunnel, of course :P ).
@@ -97,7 +99,6 @@ To use them, download the .png image attached to the linked post and use it to r
 
 * "**SWM - MultiSelectPC**" lets you move a group of mons in the PC: hold [CTRL] when choosing "Move" to mark (or unmark) the mons you want to move, then select an empty space to move them all or clear the selection.<br />
 (Alternative graphics by **Player_Null_Name**  : http://www.rebornevo.com/forum/index.php?/topic/24930-swm-modular-modpack-e18/&amp;do=findComment&amp;comment=813369<br />
-
 To use them, download the .png image attached to the linked post and use it to replace the mod's default "SWM - MultiSelectPC.png" file)
 <br />
 
@@ -161,8 +162,6 @@ https://drive.google.com/open?id=1iuvk4uLSRV4VEMF0Gp5wdv9d5MmlZ-ez
 **Known incompatible mods**:
 <details>
 
-* None yet.
-
 * The Follower mod used to require a compatibility patch in E17, but in E18 it may no longer be the case.
 
 * The Sandbox Mode mod used to require a compatibility patch too in E17, but in E18 it is fully compatible.
@@ -208,6 +207,9 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
+
+v67
+* Added LocalSavegames.
 
 v66
 * EvOverflow has been edited to be compatible with Redux.
