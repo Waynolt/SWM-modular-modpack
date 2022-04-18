@@ -3,12 +3,14 @@
 ## <span style="color:red"> **Disclaimer** </span>
 PLEASE MAKE A POST IN THE REBORN EVO FORUM IF YOU HAVE ISSUES WITH ANY OF THESE MODS.<br />
 https://www.rebornevo.com/forums/topic/24930-swm-modular-modpack-e1840
+<br />
 
+You can also find this modpack's files versioned on GitHub:<br />
+https://github.com/Waynolt/SWM-modular-modpack 
 <br />
 
 This modpack is for **Reborn**; if you're looking for a Rejuvenation-compatible version, you can find it here:<br />
 http://www.rebornevo.com/forum/index.php?/topic/33807-rejuvenation-modular-modpack-v11-patch-3/
-
 <br />
 
 --------------------------------------------------
