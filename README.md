@@ -11,11 +11,6 @@ http://www.rebornevo.com/forum/index.php?/topic/33807-rejuvenation-modular-modpa
 
 <br />
 
-Also, some of the components in the modpack have **additional settings** that can be managed with this:<br />
-http://www.rebornevo.com/forum/index.php?/topic/40480-aironfaars-mod-box-e181updated-2018-08-23/
-
-<br />
-
 --------------------------------------------------
 
 <br />
@@ -46,32 +41,11 @@ Every component is **stand-alone**, and can be used on its own; please refer to 
  
 <details>
 
-* "**SWM - AAA**": this component is a trap, and its purpose is to crash the game.<br />
-It only exists to force people to read this section. 😛
-
-(**Please read below anyway... many of these mods change the gameplay, and you should at least know about what you have installed.**)
-<br />
-
-* "**SWM - BagSortByType**" adds a "sort by type" option when sorting the bag; alphabetical sorting is still available.<br />
-(Thanks to **DreamblitzX** for the help!)
-<br />
-
 * "**SWM - ChooseStarter**": while you are in the starter selection room, you can select your starter (as if you wanted to give it an item) and use the "Change starter" option to randomize or choose its species.
 <br />
 
 * "**SWM - EvOverflow**": if your mon's EV in any stat would go over 252, without breaking the 510 overall limit, then you are offered the choice to improve its IV, at the cost of resetting that EV.<br />
 If instead you use friendship berries at 0 EV you are offered the choice to reduce the IV.
-
-
-* "**SWM - ExpShareFullTeam**": if you have at least 1 ExpShare in your bag and noone in the team is holding one, then everybody in the team will share the battle exp (total exp gained is unchanged: instead of 1 mon getting 60 exp from the battle, you will have 6 mons getting 10 exp each); only the mons who actually fought get Evs.<br />
-If you do not have an ExpShare in your bag (i.e. you haven't found it yet, or you gave it to one of the mons in the PC) or if one of the mons in your team is holding it, then it will behave as it does in the unmodded game.
-<br />
-
-* "**SWM - FindInPC**" lets you use the box options to find items, eggs, or mons in the PC.<br />
-(Leave the search field empty to find anything.)
-<br />
-
-* "**SWM - InfiniteBackups**" prevents the game from deleting the oldest backup saves.
 <br />
 
 * "**SWM - ItemRadar**" changes the ItemFinder so that, when activated, it stays on and marks hidden items on the game map.<br />
@@ -80,67 +54,23 @@ Alternative graphics by **Xander** : https://www.rebornevo.com/forum/index.php?/
 To use them, download the .png image attached to the linked post and use it to replace the mod's default "SWM - ItemRadar.png" file)
 <br />
 
-* "**SWM - ItemsBan**" forbids item usage in battle.
-<br />
-
 * "**SWM - LearnEggMoves**" lets the move relearner teach any egg move.
-<br />
-
-* "**SWM - LocalSavegames**" moves the savegame folder inside of Reborn's folder.
 <br />
 
 * "**SWM - MiningForRich**": while mining the wall won't collapse, but mining further costs cumulatively more and more money (spent on materials to build a tunnel, of course :P ).
 <br />
 
-* "**SWM - Mouse**" simply enables the mouse in-game.<br />
-(Eh, I've always wanted to use "simply" to describe something this big 😄  )<br />
-(Thanks to **DreamblitzX** for the help!)
-<br />
-
-* "**SWM - MultiSelectPC**" lets you move a group of mons in the PC: hold [CTRL] when choosing "Move" to mark (or unmark) the mons you want to move, then select an empty space to move them all or clear the selection.<br />
-(Alternative graphics by **Player_Null_Name**  : http://www.rebornevo.com/forum/index.php?/topic/24930-swm-modular-modpack-e18/&amp;do=findComment&amp;comment=813369<br />
-To use them, download the .png image attached to the linked post and use it to replace the mod's default "SWM - MultiSelectPC.png" file)
-<br />
-
-* "**SWM – NoHpAnimation**" hides the HP gauge animations during battle.
-<br />
-
 * "**SWM - NoTMXAnimations**" hides the TM animations for using Cut, Strength, etc, out of battle.
-<br />
-
-* "**SWM - NoTMXNeeded**" makes it no longer necessary to teach TM moves (Cut, Strength, Fly, etc) to your mons; just having the badge and the machine is enough to use them out of combat.
-<br />
-
-* "**SWM - PickupQoL**" alters the ability PickUp: items picked up are put directly in your bag, and you are sent a message stating who picked what up.
 <br />
 
 * "**SWM - PredictRelationshipValues**" makes the move Psychic usable out of combat, and using it lets you know each npc's relationship value.
 <br />
 
-* "**SWM - SetWeather**" adds new options in the Pokegear.<br />
-"Select Weather" allows you to directly choose the weather for today in the area you are in.<br />
-"Reroll weather week" resets the internal weather calendar of the game; useful if you got it stuck by messing with the system date.
-<br />
-
 * "**SWM - SharedPC**" makes the last box in the PC shared amongst savegames: mons you put in it will be there if you start a new game or load a different savegame.
-<br />
-
-* "**SWM - ShowStatBoosts**" shows each mon's stat stages in battle.<br />
-(Alternative graphics by **Player_Null_Name**  : http://www.rebornevo.com/forum/index.php?/topic/24930-swm-modular-modpack-e18/&amp;do=findComment&amp;comment=805921 <br />
-To use them, download the .png image attached to the linked post and use it to replace the mod's default "SWM - ShowStatBoosts.png" file)
+If updating from E18: please note that you have to load up your latest savegame and save once in E19 in order to use the Shared Box in a new game.
 <br />
 
 * "**SWM - TypeBattleIcons**" shows each mon's type in battle.
-<br />
-
-* "**SWM - UnrealClock**" shows the current in-game time.
-<br />
-
-* "**SWM - UnrealTime**" changes the game time from real time to simulated time, so that if you only play in the evening you can still get to see morning events too.<br />
-(Please note: using it with SetWeather allows you to change the time, but it also resets the calendar - which in turn affects things like the lottery)
-<br />
-
-* "**SWM - WildEncounterRates**": if the party leader is holding a Smoke Ball or has the ability Run Away and there are mons in the area that you haven't caught yet, then you're guaranteed to encounter one of those.
 <br />
 
 </details>
@@ -154,24 +84,15 @@ To use them, download the .png image attached to the linked post and use it to r
 ## <span style="color:green"> **Compatibility with other mods** </span>
 
 
-Last version of SWM (v59) to be compatible with mods based on **Reborn Episode 18.1**:<br />
-https://drive.google.com/open?id=1iuvk4uLSRV4VEMF0Gp5wdv9d5MmlZ-ez
+Last version of SWM (v67) to be compatible with mods based on **Reborn Episode 18.1**:<br />
+https://drive.google.com/open?id=19fajG-Cdt3q2nLipkvcI8UvN6-X3vxRX
 
 <br />
 
 **Known incompatible mods**:
 <details>
 
-* The Follower mod used to require a compatibility patch in E17, but in E18 it may no longer be the case.
-
-* The Sandbox Mode mod used to require a compatibility patch too in E17, but in E18 it is fully compatible.
-
-* Redux at the moment is both compatible and incompatible: SWM mods will run in Redux, but some of them will cause either Redux or themselves (or both) to bug out.
-
-* Memeborn and Memeforms should be compatible, but with big mods it's hard to say for sure without extensive testing (sadly I'm not enough of a masochist to install a difficulty increaser on an already difficult game).
-
-* PR Mod Menu is not compatible.
-* Cool Funky Mode is probably not compatible.
+* None yet
 
 </details> 
 
@@ -182,17 +103,17 @@ https://drive.google.com/open?id=1iuvk4uLSRV4VEMF0Gp5wdv9d5MmlZ-ez
 
 * Any mod that doesn't add files to the **Mods** folder.
 * Any mod that doesn't change the **Scripts.rxdata** file.
-* The E18 version of the **Sandbox Mode** is fully compatible.
-* **Aironfaar**'s **Mod Box** should be fully compatible (some of those mods were even specifically designed to work with SWM).
+* The E19 version of the **Sandbox Mode** is fully compatible.
 
-* **Redux** at the moment is both compatible and incompatible: SWM mods will run in **Redux**, but some of them will cause either **Redux** or themselves (or both) to bug out.
+</details>
 
-* **Memeborn** and **Memeforms** should be compatible, but with big mods it's hard to say for sure without extensive testing (sadly I'm not enough of a masochist to install a difficulty increaser on an already difficult game).
+<br />
+
+**Probably compatible, or at least they used to be**:
+<details>
 
 * **Pyrolusitium Z** is compatible, but you have to follow its install instructions.
-* **Alternate Form Pack** is fully compatible.
-
-* **The Sage of Reborn** is fully compatible.
+* **Plates of Arceus** is fully compatible.
 
 </details>
 
@@ -207,6 +128,9 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
+
+v68
+* Updated for E19.
 
 v67
 * Added LocalSavegames.

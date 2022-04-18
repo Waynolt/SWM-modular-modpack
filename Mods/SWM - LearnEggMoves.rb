@@ -1,81 +1,88 @@
 #####MODDED
-def aaaGetBabyMoves(pokemon, babyspecies)
-  emoves = []
-  
-  egg=PokeBattle_Pokemon.new(babyspecies,EGGINITIALLEVEL,nil)
-  egg.form = pokemon.form unless egg.species == 479 # New form inheriting
-  
-  formcheck = MultipleForms.call("getEggMoves",egg)
+def swm_getAllEggMoves(pokemon)
+  moves=[]
+  babies=swm_getPossibleBabies(pokemon.species)
+  for baby in babies
+    tmp=swm_getEggMoves(baby, pokemon.form)
+    moves.push(*tmp)
+  end
+  moves|=[] # remove duplicates
+  retval=[]
+  for move in moves
+    # next if level>pokemon.level # No need to check for level... we're talking egg moves here, remember?
+    next if pokemon.knowsMove?(move)
+    retval.push(move)
+  end
+  return retval
+end
+
+def swm_getPossibleBabies(species)
+  babyspecies=pbGetBabySpecies(species)
+  babies=[babyspecies, pbGetNonIncenseLowestSpecies(babyspecies)]
+  if isConst?(babyspecies, PBSpecies,:MANAPHY) && hasConst?(PBSpecies, :PHIONE)
+    babyspecies=getConst(PBSpecies, :PHIONE)
+    babies.push(*[babyspecies, pbGetNonIncenseLowestSpecies(babyspecies)])
+  end
+  babyspecies=[]
+  if (babyspecies == PBSpecies::NIDORANfE) && hasConst?(PBSpecies,:NIDORANmA)
+    babyspecies=[(PBSpecies::NIDORANmA), (PBSpecies::NIDORANfE)]
+  elsif (babyspecies == PBSpecies::NIDORANmA) && hasConst?(PBSpecies,:NIDORANfE)
+    babyspecies=[(PBSpecies::NIDORANmA), (PBSpecies::NIDORANfE)]
+  elsif (babyspecies == PBSpecies::VOLBEAT) && hasConst?(PBSpecies,:ILLUMISE)
+    babyspecies=[PBSpecies::VOLBEAT, PBSpecies::ILLUMISE]
+  elsif (babyspecies == PBSpecies::ILLUMISE) && hasConst?(PBSpecies,:VOLBEAT)
+    babyspecies=[PBSpecies::VOLBEAT, PBSpecies::ILLUMISE]
+  end
+  for baby in babyspecies
+    babies.push(*[baby, pbGetNonIncenseLowestSpecies(baby)])
+  end
+  return babies|[] # Remove duplicates
+end
+
+def swm_getEggMoves(babyspecies, form)
+  moves=[]
+  egg=PokeBattle_Pokemon.new(babyspecies,EGGINITIALLEVEL,$Trainer)
+  egg.form = form
+  name = egg.getFormName
+	formcheck = PokemonForms.dig(egg.species,name,:EggMoves)
   if formcheck!=nil
     for move in formcheck
-	  atk = getID(PBMoves,move)
-      emoves.push(atk) if !pokemon.knowsMove?(atk)
+      atk = getID(PBMoves,move)
+      moves.push(atk)
     end
-  else  
-	pbRgssOpen("Data/eggEmerald.dat","rb"){|f|
-		 f.pos=(babyspecies-1)*8
-		 offset=f.fgetdw
-		 length=f.fgetdw
-		 if length>0
-		   f.pos=offset
-		   i=0; loop do break unless i<length
-			 atk = f.fgetw
-			 emoves.push(atk) if !pokemon.knowsMove?(atk)
-			 
-			 i+=1
-		   end
-		 end
-	}
+  else 
+    movelist = $cache.pkmn_egg[babyspecies]
+    if movelist
+      for i in movelist
+        atk = getID(PBMoves,i)
+        moves.push(atk)
+      end
+    end
   end
   # Volt Tackle
-  if isConst?(pokemon.species,PBSpecies,:PICHU) || isConst?(pokemon.species,PBSpecies,:PIKACHU) || isConst?(pokemon.species,PBSpecies,:RAICHU)
-    move = getConst(PBMoves,:VOLTTACKLE)
-    emoves.push(move) if !pokemon.knowsMove?(move)
-  end
-  
-  return emoves
-end
-#####/MODDED
-
-def pbGetRelearnableMoves(pokemon)
-  return [] if !pokemon || pokemon.isEgg? || (pokemon.isShadow? rescue false)
-  moves=[]
-  pbEachNaturalMove(pokemon){|move,level|
-     if level<=pokemon.level && !pokemon.knowsMove?(move)
-       moves.push(move) if !moves.include?(move)
-     end
-  }
-  tmoves=[]
-  if pokemon.firstmoves
-    for i in pokemon.firstmoves
-      tmoves.push(i) if !pokemon.knowsMove?(i) && !moves.include?(i)
-    end
-  end
-  #####MODDED
-  #Get baby species
-  babyspecies = pbGetBabySpecies(pokemon.species)
-  if isConst?(babyspecies,PBSpecies,:MANAPHY) && hasConst?(PBSpecies,:PHIONE)
-    babyspecies=getConst(PBSpecies,:PHIONE)
-  end
-  emoves = aaaGetBabyMoves(pokemon, babyspecies)
-  
-  #Get non incense baby species
-  babyspeciesOld = babyspecies
-  babyspecies = pbGetNonIncenseLowestSpecies(babyspecies)
-  if babyspecies != babyspeciesOld
-    emoves = emoves+aaaGetBabyMoves(pokemon, babyspecies)
-  end
-  
-  moves=tmoves+moves+emoves
-  #####/MODDED
-  #####MODDED, was moves=tmoves+moves
+  moves.push(PBMoves::VOLTTACKLE) if [PBSpecies::PICHU, PBSpecies::PIKACHU, PBSpecies::RAICHU].include?(babyspecies)
   return moves|[] # remove duplicates
 end
 
-#Pls stop using the wrong SWM version on the wrong Reborn Episode :(
-if !(getversion[0..1] == "18")
-  Kernel.pbMessage("Sorry, but this version of SWM was designed for Pokemon Reborn Episode 18")
-  Kernel.pbMessage("Using SWM in an episode it was not designed for is no longer allowed.")
-  Kernel.pbMessage("It simply causes too many problems.")
+if !defined?(swm_learnEggMoves_oldPbGetRelearnableMoves)
+  alias :swm_learnEggMoves_oldPbGetRelearnableMoves :pbGetRelearnableMoves
+end
+#####/MODDED
+
+def pbGetRelearnableMoves(pokemon, *args, **kwargs)
+  moves=swm_learnEggMoves_oldPbGetRelearnableMoves(pokemon, *args, **kwargs)
+  emoves=swm_getAllEggMoves(pokemon)
+  moves.push(*emoves)
+  moves|=[] # remove duplicates
+  # moves.sort { |atkA, atkB| PBMoves.getName(atkA) <=> PBMoves.getName(atkB) }
+  return moves
+end
+
+# Pls stop using the wrong SWM version on the wrong Reborn Episode :(
+swm_target_version='19'
+if !getversion().start_with?(swm_target_version)
+  Kernel.pbMessage(_INTL('Sorry, but this version of SWM was designed for Pokemon Reborn Episode {1}', swm_target_version))
+  Kernel.pbMessage(_INTL('Using SWM in an episode it was not designed for is no longer allowed.'))
+  Kernel.pbMessage(_INTL('It simply causes too many problems.'))
   exit
 end
