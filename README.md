@@ -349,18 +349,18 @@ v23
 
  
 <details>
-Episode 18
+Episode 18 <br />
 * Download: https://drive.google.com/open?id=1iuvk4uLSRV4VEMF0Gp5wdv9d5MmlZ-ez <br />
 
 
-Episode 17
+Episode 17 <br />
 * Download: https://drive.google.com/file/d/1pemW487Qt9kMKQnxS4rhdjamnw0pjhAN/view?usp=sharing <br />
 * Compatibility patches: (install the mod, then SWM, then the patch)<br />
   * **Personthing**'s **Follower mod**: https://drive.google.com/open?id=1gov02z03QCcFKw42xhklxpO5vQNIm6Yw <br />
   * **DerxwnaKapsyla**'s **Sandbox mod**: https://drive.google.com/open?id=1jTyAkNqMHjuaU6qDMoB893z12ZNZmJK4 <br />
 
 
-Episode 16
+Episode 16 <br />
 * Download: https://drive.google.com/open?id=0B4XiRtkwr4blLXdlX29BU3ZZQ0E <br />
 
 </details>
