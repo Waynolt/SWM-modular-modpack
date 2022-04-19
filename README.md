@@ -85,10 +85,6 @@ If updating from E18: please note that you have to load up your latest savegame 
 
 ## <span style="color:green"> **Compatibility with other mods** </span>
 
-
-Last version of SWM (v67) to be compatible with mods based on **Reborn Episode 18.1**:<br />
-https://drive.google.com/open?id=19fajG-Cdt3q2nLipkvcI8UvN6-X3vxRX
-
 <br />
 
 **Known incompatible mods**:
@@ -353,6 +349,8 @@ v23
 
  
 <details>
+Episode 18
+* Download: https://drive.google.com/open?id=1iuvk4uLSRV4VEMF0Gp5wdv9d5MmlZ-ez
 
 Episode 17
 * Download: https://drive.google.com/file/d/1pemW487Qt9kMKQnxS4rhdjamnw0pjhAN/view?usp=sharing <br />
