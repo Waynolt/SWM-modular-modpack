@@ -350,7 +350,7 @@ v23
  
 <details>
 Episode 18
-* Download: https://drive.google.com/open?id=1iuvk4uLSRV4VEMF0Gp5wdv9d5MmlZ-ez
+* Download: https://drive.google.com/open?id=1iuvk4uLSRV4VEMF0Gp5wdv9d5MmlZ-ez <br />
 
 
 Episode 17
@@ -361,6 +361,6 @@ Episode 17
 
 
 Episode 16
-* Download: https://drive.google.com/open?id=0B4XiRtkwr4blLXdlX29BU3ZZQ0E
+* Download: https://drive.google.com/open?id=0B4XiRtkwr4blLXdlX29BU3ZZQ0E <br />
 
 </details>
