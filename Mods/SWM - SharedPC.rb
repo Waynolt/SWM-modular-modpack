@@ -1,4 +1,6 @@
 #####MODDED
+$swm_loadedSharedBox=false
+
 def swm_getSharedSaveFile
   folder=RTP.getSaveFolder().gsub(/[\/\\]$/,'')+'/../Pokemon Shared PC'
   Dir.mkdir(folder) unless (File.exists?(folder))
@@ -6,6 +8,8 @@ def swm_getSharedSaveFile
 end
 
 def swm_loadSharedBox
+  $swm_loadedSharedBox=true
+  return nil if !$PokemonStorage
   return nil if !swm_ensureSharedSavedFile
   File.open(swm_getSharedSaveFile){|f|
     $PokemonStorage.swm_setSharedBoxContents(Marshal.load(f))
@@ -16,10 +20,12 @@ def swm_ensureSharedSavedFile
   sharedSavefile=swm_getSharedSaveFile
   return true if safeExists?(sharedSavefile)
   # The file doesn't exist - create one
+  $swm_loadedSharedBox=true # This way swm_saveSharedBox will save it even if it was not loaded
   return swm_saveSharedBox
 end
 
 def swm_saveSharedBox
+  return false if !$swm_loadedSharedBox
   return false if !defined?($PokemonStorage)
   sharedSavefile=swm_getSharedSaveFile
   sharedSavefileTmp="#{sharedSavefile}.tmp"
