@@ -48,6 +48,7 @@ Every component is **stand-alone**, and can be used on its own; please refer to 
 
 * "**SWM - EvOverflow**": if your mon's EV in any stat would go over 252, without breaking the 510 overall limit, then you are offered the choice to improve its IV, at the cost of resetting that EV.<br />
 If instead you use friendship berries at 0 EV you are offered the choice to reduce the IV.
+Use the password "noevcap" to disable EVs being lowered to make room for new gains when reaching the 510 overall limit.
 <br />
 
 * "**SWM - ItemRadar**" changes the ItemFinder so that, when activated, it stays on and marks hidden items on the game map.<br />
@@ -66,6 +67,9 @@ To use them, download the .png image attached to the linked post and use it to r
 <br />
 
 * "**SWM - PredictRelationshipValues**" makes the move Psychic usable out of combat, and using it lets you know each npc's relationship value.
+<br />
+
+* "**SWM - RestToWait**" makes the move Rest usable out of combat, and using it lets you wait for some simulated time.
 <br />
 
 * "**SWM - SharedPC**" makes the last box in the PC shared amongst savegames: mons you put in it will be there if you start a new game or load a different savegame.

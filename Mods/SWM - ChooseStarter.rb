@@ -4,36 +4,62 @@ Events.onStepTaken+=proc {
 }
 #####/MODDED
 
-class PokemonOptions
-  #####MODDED
-  attr_accessor   :swm_starterRoomId
-  attr_accessor   :swm_starterRoomFound
-  #####/MODDED
-end
-
 class Game_Map
   #####MODDED
   def swm_checkStarterRoom
     # The last step taken without mons in the party is taken in the starters room
-    return nil if defined?($idk[:settings].swm_starterRoomFound) && $idk[:settings].swm_starterRoomFound
+    return nil if $Trainer.numbadges > 0
+    swm_tryLoadStarterRoomData()
+    return nil if defined?($swm_starterRoomFound) && $swm_starterRoomFound
     if $Trainer.party.length > 0
-      $idk[:settings].swm_starterRoomFound=true
+      $swm_starterRoomFound=true
+      swm_trySaveStarterRoomData()
       return nil
     end
-    $idk[:settings].swm_starterRoomId=@map_id
+    $swm_starterRoomId=@map_id
   end
 
   def swm_playerInStarterRoom?
-    return false if !defined?($idk[:settings].swm_starterRoomId) || !$idk[:settings].swm_starterRoomId
+    return false if !defined?($swm_starterRoomId) || !$swm_starterRoomId
     return false if $Trainer.numbadges > 0
-    return @map_id == $idk[:settings].swm_starterRoomId
+    return @map_id == $swm_starterRoomId
   end
   #####/MODDED
 end
 
+#####MODDED
+def swm_getStarterRoomDataFilename
+  return RTP.getSaveFileName('SWM_starterRoom.txt')
+end
+
+def swm_tryLoadStarterRoomData
+  return nil if defined?($swm_starterFileChecked) && $swm_starterFileChecked
+  $swm_starterFileChecked=true
+  filename=swm_getStarterRoomDataFilename()
+  return nil if !safeExists?(filename)
+  File.open(filename).each do |line|
+    $swm_starterRoomId=line.strip().to_i
+    $swm_starterRoomFound=true
+  end
+end
+
+def swm_trySaveStarterRoomData
+  return nil if !defined?($swm_starterRoomFound)
+  return nil if !defined?($swm_starterRoomId)
+  return nil if !$swm_starterRoomFound
+  return nil if !$swm_starterRoomId
+  filename=swm_getStarterRoomDataFilename()
+  return nil if safeExists?(filename) # No need to redo this
+  File.open(filename, 'wb') { |f|
+    f << "#{$swm_starterRoomId}\n"
+  }
+end
+#####/MODDED
+
 class PokemonScreen
   #####MODDED
   def swm_handleStarterChange
+    $game_map.swm_checkStarterRoom()
     return nil if !$game_map.swm_playerInStarterRoom?
     Kernel.pbMessage(_INTL('While in the starter room it is possible to choose any starter species, any time.'))
     choice=Kernel.pbMessage(
