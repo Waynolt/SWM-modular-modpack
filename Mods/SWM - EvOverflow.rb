@@ -1,4 +1,7 @@
 #####MODDED
+SWM_EV_LIMIT_PER_STAT = 252
+SWM_EV_LIMIT_GLOBAL   = 510
+
 def swm_manageEvGain(evgain, k, thispoke)
   return [] if evgain == 0
   messages=swm_handleIvEvGain(evgain, k, thispoke)
@@ -7,19 +10,27 @@ def swm_manageEvGain(evgain, k, thispoke)
 end
 
 def swm_handleIvEvGain(evgain, k, thispoke)
+  if swm_getMonHasPowerItem(thispoke)
+    # Excess EVs will be recovered later, in swm_handleEvLimit
+    allowedGain=evgain
+  else
+    # This will prevent swm_handleEvLimit from lowering EVs if evgain is positive 
+    maxGain=swm_getEvsForReachingTheGlobalLimit(thispoke)
+    allowedGain=[maxGain, evgain].min
+  end
   startIv=thispoke.iv[k]
-  thispoke.ev[k]+=evgain # evgain can be lower than 0
-  while thispoke.ev[k] > 252
+  thispoke.ev[k]+=allowedGain # evgain can be lower than 0
+  while thispoke.ev[k] > SWM_EV_LIMIT_PER_STAT
     if thispoke.iv[k] < 31
-      thispoke.ev[k]-=252
+      thispoke.ev[k]-=SWM_EV_LIMIT_PER_STAT
       thispoke.iv[k]+=1
     else
-      thispoke.ev[k]=252
+      thispoke.ev[k]=SWM_EV_LIMIT_PER_STAT
     end
   end
   while thispoke.ev[k] < 0
     if thispoke.iv[k] > 0
-      thispoke.ev[k]+=252
+      thispoke.ev[k]+=SWM_EV_LIMIT_PER_STAT
       thispoke.iv[k]-=1
     else
       thispoke.ev[k]=0
@@ -27,6 +38,12 @@ def swm_handleIvEvGain(evgain, k, thispoke)
   end
   ivgain=thispoke.iv[k]-startIv
   return swm_notifyIvChange(k, thispoke, ivgain)
+end
+
+def swm_getMonHasPowerItem(thispoke)
+  return true if (thispoke.item == PBItems::MACHOBRACE) || (thispoke.itemInitial == PBItems::MACHOBRACE)
+  return true if [PBItems::POWERWEIGHT, PBItems::POWERBRACER,PBItems::POWERBELT,PBItems::POWERANKLET,PBItems::POWERLENS,PBItems::POWERBAND].include?(thispoke.item)
+  return false
 end
 
 def swm_notifyIvChange(k, thispoke, ivgain)
@@ -70,13 +87,8 @@ def swm_notifyIvChange(k, thispoke, ivgain)
 end
 
 def swm_handleEvLimit(evgain, k, thispoke)
-  return nil if $game_switches[:No_Total_EV_Cap]
   # Redistribute by removing from the lowest ev
-  totalev=0
-  for i in 0...thispoke.ev.length
-    totalev+=thispoke.ev[i]
-  end
-  evdiff=totalev-510
+  evdiff=-(swm_getEvsForReachingTheGlobalLimit(thispoke))
   if evgain < 0 && evdiff > 0
     # Reduce the EV we were already reducing first
     # Don't reduce the IV further - we do not want to risk a loop
@@ -91,6 +103,19 @@ def swm_handleEvLimit(evgain, k, thispoke)
     thispoke.ev[ev]-=lowerBy
     evdiff-=lowerBy
   end
+end
+
+def swm_getEvsForReachingTheGlobalLimit(thispoke)
+  # Redistribute by removing from the lowest ev
+  if $game_switches[:No_Total_EV_Cap]
+    maxRemainingEvGlobal=SWM_EV_LIMIT_PER_STAT * thispoke.ev.length
+  else
+    maxRemainingEvGlobal=SWM_EV_LIMIT_GLOBAL
+  end
+  for i in 0...thispoke.ev.length
+    maxRemainingEvGlobal-=thispoke.ev[i]
+  end
+  return maxRemainingEvGlobal
 end
 
 def swm_getLowestEv(k, thispoke)
