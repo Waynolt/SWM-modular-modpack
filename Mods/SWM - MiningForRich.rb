@@ -48,8 +48,8 @@ def swm_getHitsCount(hitsToRemove, registerNewCount)
 end
 
 def swm_getBaseHitCost
-  return 10 if !defined?($PokemonSystem.additionalMiningCost)
-  return $PokemonSystem.additionalMiningCost
+  return 10 if !defined?($idk[:settings].amb_additionalMiningCost)
+  return $idk[:settings].amb_additionalMiningCost
 end
 #####/MODDED
 
