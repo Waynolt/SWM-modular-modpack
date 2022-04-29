@@ -106,6 +106,8 @@ If updating from E18: please note that you have to load up your latest savegame 
 * Any mod that doesn't add files to the **Mods** folder.
 * Any mod that doesn't change the **Scripts.rxdata** file.
 * The E19 version of the **Sandbox Mode** is fully compatible.
+* The E19 version of the **Additional Options** mod is fully compatible.
+* **Pyrolusitium Z** is compatible, but you have to follow its install instructions.
 
 </details>
 
@@ -114,8 +116,7 @@ If updating from E18: please note that you have to load up your latest savegame 
 **Probably compatible, or at least they used to be**:
 <details>
 
-* **Pyrolusitium Z** is compatible, but you have to follow its install instructions.
-* **Plates of Arceus** is fully compatible.
+* The E19 version of the **Plates of Arceus** mod would be fully compatible. 
 
 </details>
 
@@ -130,6 +131,19 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
+
+v72
+* EvOverflow only lowers EVs if the mon is holding a power item.
+
+v71
+* Updated a variable name in MiningForRich to ensure compatibility with the Additional Options mod.
+
+v70
+* Shared PC will no longer nuke your Shared Box if you save a new game without ever accessing the PC.
+
+v69
+* Added RestToWait.
+* Better starter room check for ChooseStarter.
 
 v68
 * Updated for E19.
