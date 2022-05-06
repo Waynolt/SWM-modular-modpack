@@ -133,7 +133,7 @@ If there's any I forgot about, sorry; simply ask about them.
 <details>
 
 v73
-*  Aevian Misdreavus is a thing.
+* Aevian Misdreavus is a thing.
 
 v72
 * EvOverflow only lowers EVs if the mon is holding a power item.
