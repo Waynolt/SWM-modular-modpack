@@ -94,12 +94,21 @@ class PokemonScreen
     else
       formnames=strsplit(formnames,/,/)
     end
+    hasAlolan=false
+    idAlternate=-1
     result=[]
     for i in 0...formnames.length
       name=formnames[i].strip
       next if name == ''
+      nameDowncase=name.downcase
+      hasAlolan=true if nameDowncase=='alolan'
+      idAlternate=i if nameDowncase=='alternate'
       result.push([name, i])
     end
+    if !hasAlolan && idAlternate >= 0
+      # In the base game Alolans are named Alternate
+      result[idAlternate][0]='Alolan'
+    end 
     return result
   end
 
@@ -121,9 +130,11 @@ class PokemonScreen
   end
 
   def swm_isAlternateFormsPackInstalled?
-    #Is this the alternate forms pack mod? Ask drapion!
-    formnames=swm_getFormNames(getID(PBSpecies, :DRAPION))
-    return formnames.length > 1
+    # Can also handle Aevian Misdreavus, with the only downside of renaming Alolan to Alternate
+    return true
+    # # Is this the alternate forms pack mod? Ask drapion!
+    # formnames=swm_getFormNames(getID(PBSpecies, :DRAPION))
+    # return formnames.length > 1
   end
 
   def swm_getNewSpecies(oldSpecies)
