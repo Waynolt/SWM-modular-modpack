@@ -18,17 +18,37 @@ end
 def swm_getRelationshipValues
   values=[]
   suffix='relationship'
+  mapping={
+    'relaceshionship': 'Ace'
+  }
   max=$cache.RXsystem.variables.length
   for i in 0...max
     var=$cache.RXsystem.variables[i]
     next if !var
-    varLower=var.downcase
-    next if !varLower.end_with?(suffix)
-    name=var.slice(0,var.length-suffix.length).strip
+    name=swn_getCharName(var, suffix, mapping)
+    next if !name
     values.push(_INTL('{1}: {2}', name, $game_variables[i]))
   end
   values=values.sort
   return values
+end
+
+def swn_getCharName(var, suffix, mapping)
+  varLower=var.downcase.strip
+  if varLower.end_with?(suffix)
+    # Standard
+    return var.slice(0,var.length-suffix.length).strip
+  end
+  sym=varLower.to_sym
+  if mapping[sym]
+    # Extra values
+    return mapping[sym]
+  end
+  # if varLower.include?('ace')
+  #   # Search results
+  #   return _INTL('|{1}|', varLower)
+  # end
+  return nil
 end
 
 HiddenMoveHandlers::CanUseMove.add(:PSYCHIC,lambda{|move,pkmn|
