@@ -12,6 +12,7 @@ included_items=(
   'Mods/'
   'LICENCE'
   'README.md'
+  'VERSION'
 )
 
 mkdir -p "$releases_folder" || exit $?
