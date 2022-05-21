@@ -132,6 +132,9 @@ If there's any I forgot about, sorry; simply ask about them.
  
 <details>
 
+v75
+* Bugfix for the itemfinder mod.
+
 v74
 * Relaceshionship?
 

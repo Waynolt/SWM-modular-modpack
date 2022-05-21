@@ -7,7 +7,7 @@ if [ ! -e 'make_zipfile.sh' ]; then
 fi
 
 releases_folder='Releases'
-filename="${releases_folder}/SWM_modular_modpack_v$(cat 'VERSION')_E19.zip"
+filename="${releases_folder}/SWM_modular_modpack_E19.zip"
 included_items=(
   'Mods/'
   'LICENCE'

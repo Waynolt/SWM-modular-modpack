@@ -9,14 +9,13 @@ ItemHandlers::UseInField.add(:ITEMFINDER,proc{|item|
 })
 #####/MODDED
 
+$swm_itemRadarMarkersLayerBitmap=nil # Force the reloading of disposed graphics on soft resetting
 class Game_Screen
 	#####MODDED
 	attr_accessor   :swm_itemRadarIsOn
 	
 	def swm_checkIsItemRadarOn?
-		if !defined?(@swm_itemRadarIsOn)
-			@swm_itemRadarIsOn=false
-		end
+    @swm_itemRadarIsOn=false if !defined?(@swm_itemRadarIsOn)
 		if @swm_itemRadarIsOn
 			if !defined?($swm_itemRadarMarkersLayer) || $swm_itemRadarMarkersLayer.disposed?
 				$swm_itemRadarMarkersLayer=Sprite.new(nil)
@@ -31,10 +30,9 @@ class Game_Screen
 	end
 	
 	def swm_itemRadarCheckScroll(deltaX, deltaY)
-		if swm_checkIsItemRadarOn?
-			$swm_itemRadarMarkersLayer.ox=($game_player.real_x/Game_Map::XSUBPIXEL)-(($game_player.x-deltaX)*Game_Map::TILEWIDTH)
-			$swm_itemRadarMarkersLayer.oy=($game_player.real_y/Game_Map::YSUBPIXEL)-(($game_player.y-deltaY)*Game_Map::TILEHEIGHT)
-		end
+		return nil if !swm_checkIsItemRadarOn?
+    $swm_itemRadarMarkersLayer.ox=($game_player.real_x/Game_Map::XSUBPIXEL)-(($game_player.x-deltaX)*Game_Map::TILEWIDTH)
+    $swm_itemRadarMarkersLayer.oy=($game_player.real_y/Game_Map::YSUBPIXEL)-(($game_player.y-deltaY)*Game_Map::TILEHEIGHT)
 	end
 	
 	def swm_toggleRadar
@@ -52,33 +50,34 @@ class Game_Screen
 	end
 	
 	def swm_updateRadar
-		if swm_checkIsItemRadarOn?
-			swm_itemRadarMarkersLayerBitmap=AnimatedBitmap.new('Data/Mods/SWM - ItemRadar')
-			playerX=$game_player.x
-			playerY=$game_player.y
-			offsetX=((Graphics.width-Game_Map::TILEWIDTH)/2)
-			offsetY=((Graphics.height-Game_Map::TILEHEIGHT)/2)
-			$swm_itemRadarMarkersLayer.bitmap=Bitmap.new(Graphics.width,Graphics.height)
-			$swm_itemRadarMarkersLayer.ox=0
-			$swm_itemRadarMarkersLayer.oy=0
-			#Find and print items
-			for event in $game_map.events.values
-				next if event.name != 'HiddenItem'
-				next if (playerX-event.x).abs >= 8
-				next if (playerY-event.y).abs >= 6
-				next if $game_self_switches[[$game_map.map_id, event.id, 'A']]
-				next if $game_self_switches[[$game_map.map_id, event.id, 'B']]
-				next if $game_self_switches[[$game_map.map_id, event.id, 'C']]
-				next if $game_self_switches[[$game_map.map_id, event.id, 'D']]
-				#Print items
-				$swm_itemRadarMarkersLayer.bitmap.blt(
-          offsetX+(event.x-playerX)*Game_Map::TILEWIDTH,
-          offsetY+(event.y-playerY)*Game_Map::TILEHEIGHT,
-          swm_itemRadarMarkersLayerBitmap.bitmap,
-          swm_itemRadarMarkersLayerBitmap.bitmap.rect
-        )
-			end
-		end
+		return nil if !swm_checkIsItemRadarOn?
+    if !$swm_itemRadarMarkersLayerBitmap
+      $swm_itemRadarMarkersLayerBitmap=AnimatedBitmap.new('Data/Mods/SWM - ItemRadar.png')
+    end
+    playerX=$game_player.x
+    playerY=$game_player.y
+    offsetX=((Graphics.width-Game_Map::TILEWIDTH)/2)
+    offsetY=((Graphics.height-Game_Map::TILEHEIGHT)/2)
+    $swm_itemRadarMarkersLayer.bitmap=Bitmap.new(Graphics.width,Graphics.height)
+    $swm_itemRadarMarkersLayer.ox=0
+    $swm_itemRadarMarkersLayer.oy=0
+    #Find and print items
+    for event in $game_map.events.values
+      next if event.name != 'HiddenItem'
+      next if (playerX-event.x).abs >= 8
+      next if (playerY-event.y).abs >= 6
+      next if $game_self_switches[[$game_map.map_id, event.id, 'A']]
+      next if $game_self_switches[[$game_map.map_id, event.id, 'B']]
+      next if $game_self_switches[[$game_map.map_id, event.id, 'C']]
+      next if $game_self_switches[[$game_map.map_id, event.id, 'D']]
+      #Print items
+      $swm_itemRadarMarkersLayer.bitmap.blt(
+        offsetX+(event.x-playerX)*Game_Map::TILEWIDTH,
+        offsetY+(event.y-playerY)*Game_Map::TILEHEIGHT,
+        $swm_itemRadarMarkersLayerBitmap.bitmap,
+        $swm_itemRadarMarkersLayerBitmap.bitmap.rect
+      )
+    end
 	end
 	#####/MODDED
 end

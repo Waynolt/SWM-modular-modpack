@@ -25,7 +25,7 @@ class PokemonDataBox < SpriteWrapper
 
   def swm_ensureTypeBitmaps
     return nil if !swm_shouldLoadTypeBitmaps
-    rawBmp=AnimatedBitmap.new('Data/Mods/SWM - TypeBattleIcons')
+    rawBmp=AnimatedBitmap.new('Data/Mods/SWM - TypeBattleIcons.png')
     retval=[]
     spriteWidth=32
     spriteHeight=12
