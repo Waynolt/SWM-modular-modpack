@@ -38,8 +38,11 @@ def swm_tryLoadStarterRoomData
   filename=swm_getStarterRoomDataFilename()
   return nil if !safeExists?(filename)
   File.open(filename).each do |line|
-    $swm_starterRoomId=line.strip().to_i
-    $swm_starterRoomFound=true
+    line_stripped=line.strip()
+    if line_stripped && (line_stripped != '')
+      $swm_starterRoomId=line_stripped.to_i
+      $swm_starterRoomFound=true
+    end
   end
 end
 
