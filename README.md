@@ -52,8 +52,8 @@ Use the password "noevcap" to disable EVs being lowered to make room for new gai
 <br />
 
 * "**SWM - ItemRadar**" changes the ItemFinder so that, when activated, it stays on and marks hidden items on the game map.<br />
-(Alternative graphics by **Player_Null_Name**  : http://www.rebornevo.com/forum/index.php?/topic/24930-swm-modular-modpack-e18/&amp;do=findComment&amp;comment=808102 <br />
-Alternative graphics by **Xander** : https://www.rebornevo.com/forum/index.php?/topic/24930-swm-modular-modpack-e18/&amp;do=findComment&amp;comment=835844 <br />
+(Alternative graphics by **Player_Null_Name**  : https://www.rebornevo.com/forums/topic/24930-swm-modular-modpack-e19/?do=findComment&comment=808102 <br />
+Alternative graphics by **Xander** : https://www.rebornevo.com/forums/topic/24930-swm-modular-modpack-e19/?do=findComment&comment=835844 <br />
 Alternative graphics by **SimplyEmy** : https://www.rebornevo.com/forums/topic/24930-swm-modular-modpack-e19/?do=findComment&comment=971656 <br />
 To use them, download the .png image attached to the linked post and use it to replace the mod's default "SWM - ItemRadar.png" file)
 <br />
