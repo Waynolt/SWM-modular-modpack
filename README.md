@@ -77,6 +77,9 @@ To use them, download the .png image attached to the linked post and use it to r
 If updating from E18: please note that you have to load up your latest savegame and save once in E19 in order to use the Shared Box in a new game.
 <br />
 
+* "**SWM - TypeBattleAnnouncer**" causes the announcer to say the species and typing of opponent mons about to enter the field instead of their names.
+<br />
+
 * "**SWM - TypeBattleIcons**" shows each mon's type in battle.
 <br />
 
@@ -132,6 +135,9 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
+
+v76
+* Added TypeBattleAnnouncer.
 
 v75
 * Bugfix for the itemfinder mod.
