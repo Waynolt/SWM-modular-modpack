@@ -17,6 +17,7 @@ class PokeBattle_Battle
     #####MODDED, was return newname
     #####MODDED
     poke = illusionpoke || partynumber[newpoke]
+    return poke.name if !pbIsOpposing?(index)
     if poke.type1 == poke.type2
       return _INTL('{1} ({2})', PBSpecies.getName(poke.species), PBTypes.getName(poke.type1))
     end
