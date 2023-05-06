@@ -73,6 +73,12 @@ To use them, download the .png image attached to the linked post and use it to r
 * "**SWM - RestToWait**" makes the move Rest usable out of combat, and using it lets you wait for some simulated time.
 <br />
 
+* "**SWM - ReusablePremierBalls**" Premier Balls in the vanilla game are kind of boring - they're just normal balls, which makes them just a small discount for buying balls in bulk.<br />
+With this mod they become reusable - using them on a wild mon won't actually decrease their number in your bag.<br />
+They also act like a decentralized unit: their catch rate is a lot lower than their normal catch rate, but scales linearly with how many you have, with no cap.<br />
+(Their catch rate with the mod becomes the same as the vanilla one when you have 50 of them in your bag)
+<br />
+
 * "**SWM - SharedPC**" makes the last box in the PC shared amongst savegames: mons you put in it will be there if you start a new game or load a different savegame.
 If updating from E18: please note that you have to load up your latest savegame and save once in E19 in order to use the Shared Box in a new game.
 <br />
@@ -138,6 +144,9 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
+
+v78
+* Added ReusablePremierBalls.
 
 v77
 * Added SnappyMenus.
