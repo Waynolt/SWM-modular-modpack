@@ -5,7 +5,7 @@ BallHandlers::ModifyCatchRate.add(:PREMIERBALL,proc{|ball,catchRate,battle,battl
   end
   qty_current = $PokemonBag.pbQuantity(:PREMIERBALL)
   qty_for_normal_rate = 50
-  rate_modifier = qty_current/qty_for_normal_rate
+  rate_modifier = qty_current.to_f/qty_for_normal_rate.to_f
   next (catchRate*rate_modifier*0.1).floor if pbIsUltraBeast?(battler)
   next (catchRate*rate_modifier).floor
 })
