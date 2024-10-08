@@ -19,12 +19,12 @@ http://www.rebornevo.com/forum/index.php?/topic/33807-rejuvenation-modular-modpa
 
 ## <span style="color:purple"> **Installation** </span>
 
-To **install**, just drop the folder "**Mods**" into the folder "**[Reborn]\Data**"<br />
-(In the end you should have a "**[Reborn]\Data\Mods**" folder with a bunch of files inside.)<br />
-This video from **Lostelle** explains it, showing each step required: https://www.youtube.com/watch?v=6hc3Mo432C0
+To **install**, just drop the folder "**Mods**" into the folder "**[Reborn]\patch**"<br />
+(In the end you should have a "**[Reborn]\patch\Mods**" folder with a bunch of files inside.)<br />
+This old video from **Lostelle** explains it, showing each step required (it's a bit outdated - for example the location changed - but it's still good): https://www.youtube.com/watch?v=6hc3Mo432C0
 <br />
  
-If playing on a **Mac** with **Wineskin**, then, as **Tacos** suggests, do all the modding in a Reborn folder outside of the wrapper and then make a new wrapper with that folder.
+If playing on a **Mac** with **Wineskin**, then, as **Tacos** suggests, do all the modding in a Reborn folder outside of the wrapper and then make a new wrapper with that folder (I have absolutely no idea whether this still applies though).
 
 Every component is **stand-alone**, and can be used on its own; please refer to the "**brief summary**" below for more info on each one.
 

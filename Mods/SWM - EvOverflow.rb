@@ -41,8 +41,9 @@ def swm_handleIvEvGain(evgain, k, thispoke)
 end
 
 def swm_getMonHasPowerItem(thispoke)
-  return true if (thispoke.item == PBItems::MACHOBRACE) || (thispoke.itemInitial == PBItems::MACHOBRACE)
-  return true if [PBItems::POWERWEIGHT, PBItems::POWERBRACER,PBItems::POWERBELT,PBItems::POWERANKLET,PBItems::POWERLENS,PBItems::POWERBAND].include?(thispoke.item)
+  return true if (thispoke.item == :MACHOBRACE) || (thispoke.itemInitial == :MACHOBRACE)
+  return true if [:POWERWEIGHT, :POWERBRACER,:POWERBELT,:POWERANKLET,:POWERLENS,:POWERBAND].include?(thispoke.item)
+  return true if [:CANONPOWERWEIGHT, :CANONPOWERBRACER,:CANONPOWERBELT,:CANONPOWERANKLET,:CANONPOWERLENS,:CANONPOWERBAND].include?(thispoke.item)
   return false
 end
 
@@ -138,102 +139,114 @@ end
 #####/MODDED
 
 class PokeBattle_Battle
-  def pbGainEvs(thispoke,i)
-    #Gain effort value points, using RS effort values
-    totalev=0
+  def pbGainEvs(thispoke, i)
+    # Gain effort value points, using RS effort values
+    totalev = 0
     for k in 0..5
-      totalev+=thispoke.ev[k]
+      totalev += thispoke.ev[k]
     end
     # Original species, not current species
-    evyield=@battlers[i].evYield
+    evyield = @battlers[i].evYield
     for k in 0..5
-      evgain=evyield[k]
-      evgain*=8 if (thispoke.item == PBItems::MACHOBRACE) || (thispoke.itemInitial == PBItems::MACHOBRACE)
-      evgain=0 if [PBItems::POWERWEIGHT, PBItems::POWERBRACER,PBItems::POWERBELT,PBItems::POWERANKLET,PBItems::POWERLENS,PBItems::POWERBAND].include?(thispoke.item)
+      evgain = evyield[k]
+      evgain *= 8 if thispoke.item == :MACHOBRACE || thispoke.itemInitial == :MACHOBRACE
+      evgain = 0 if [:POWERWEIGHT, :POWERBRACER, :POWERBELT, :POWERANKLET, :POWERLENS, :POWERBAND].include?(thispoke.item)
       case k
-        when 0 then evgain+=32 if (thispoke.item == PBItems::POWERWEIGHT)
-        when 1 then evgain+=32 if (thispoke.item == PBItems::POWERBRACER)
-        when 2 then evgain+=32 if (thispoke.item == PBItems::POWERBELT)
-        when 3 then evgain+=32 if (thispoke.item == PBItems::POWERANKLET)
-        when 4 then evgain+=32 if (thispoke.item == PBItems::POWERLENS)
-        when 5 then evgain+=32 if (thispoke.item == PBItems::POWERBAND)
+        when 0 then evgain += 32 if thispoke.item == :POWERWEIGHT
+        when 1 then evgain += 32 if thispoke.item == :POWERBRACER
+        when 2 then evgain += 32 if thispoke.item == :POWERBELT
+        when 3 then evgain += 32 if thispoke.item == :POWERLENS
+        when 4 then evgain += 32 if thispoke.item == :POWERBAND
+        when 5 then evgain += 32 if thispoke.item == :POWERANKLET
       end
-      evgain*=4 if thispoke.pokerusStage>=1 # Infected or cured
-      evgain = 0 if $game_switches[:Stop_Ev_Gain] == true
+      case k
+        when 0 then evgain += 8 if thispoke.item == :CANONPOWERWEIGHT
+        when 1 then evgain += 8 if thispoke.item == :CANONPOWERBRACER
+        when 2 then evgain += 8 if thispoke.item == :CANONPOWERBELT
+        when 3 then evgain += 8 if thispoke.item == :CANONPOWERLENS
+        when 4 then evgain += 8 if thispoke.item == :CANONPOWERBAND
+        when 5 then evgain += 8 if thispoke.item == :CANONPOWERANKLET
+      end
+      evgain *= 4 if thispoke.pokerusStage >= 1 # Infected or cured
+      evgain = 0 if $game_switches[:Stop_Ev_Gain]
       #####MODDED
-      msgs=swm_manageEvGain(evgain, k, thispoke)
-      for i in 0...msgs.length
-        pbDisplayPaused(msgs[i])
+      if !$game_switches[:Stop_Ev_Gain]
+        msgs = swm_manageEvGain(evgain, k, thispoke)
+        for i in 0...msgs.length
+          pbDisplayPaused(msgs[i])
+        end
       end
       #####/MODDED
       if false #####MODDED, was if evgain>0
         # Can't exceed overall limit
-        evgain-=totalev+evgain-510 if totalev+evgain>510 && !$game_switches[:No_Total_EV_Cap]
+        evgain -= totalev + evgain - 510 if totalev + evgain > 510 && !$game_switches[:No_Total_EV_Cap]
         # Can't exceed stat limit
-        evgain-=thispoke.ev[k]+evgain-252 if thispoke.ev[k]+evgain>252
+        evgain -= thispoke.ev[k] + evgain - 252 if thispoke.ev[k] + evgain > 252
+        evgain = 0 if evgain < 0
         # Add EV gain
-        thispoke.ev[k]+=evgain
-        if thispoke.ev[k]>252
+        thispoke.ev[k] += evgain
+        if thispoke.ev[k] > 252
           print "Single-stat EV limit 252 exceeded.\r\nStat: #{k}  EV gain: #{evgain}  EVs: #{thispoke.ev.inspect}"
-          thispoke.ev[k]=252
+          thispoke.ev[k] = 252
         end
-        totalev+=evgain
-        if totalev>510 && !$game_switches[:No_Total_EV_Cap]
+        totalev += evgain
+        if totalev > 510 && !$game_switches[:No_Total_EV_Cap] && !$game_switches[:SnagMachine_Password]
           print "EV limit 510 exceeded.\r\nTotal EVs: #{totalev} EV gain: #{evgain}  EVs: #{thispoke.ev.inspect}"
         end
       end
     end
-    battler = @battlers.find {|battler| battler.pokemon == thispoke}
-    battler.pbUpdate if battler
-    @scene.sprites["battlebox#{battler.index}"].refresh if battler
   end
 end
 
-def pbRaiseHappinessAndLowerEV(pokemon,scene,ev,messages)
-  #####MODDED
-  if pokemon.happiness<255
-    pokemon.changeHappiness("EV berry")
-    scene.pbDisplay(messages[2])
-  else
-    scene.pbDisplay(messages[0])
+def useEVBerry(pokemon, scene, amount, stat)
+  originalev = pokemon.ev[stat]
+  consumed = 0
+  while consumed < amount
+    #####MODDED
+    if pokemon.happiness < 255
+      pokemon.changeHappiness("EV berry")
+      scene.pbDisplay(messages[2])
+    else
+      break
+    end
+    msgs=swm_manageEvGain(-20, stat, pokemon)
+    for i in 0...msgs.length
+      scene.pbDisplay(msgs[i])
+    end
+    #####/MODDED
+    #####MODDED, was break if pokemon.happiness == 255 && pokemon.ev[stat] == 0
+    #####MODDED, was pokemon.changeHappiness("EV berry")
+    #####MODDED, was pokemon.ev[stat] -= 20
+    #####MODDED, was pokemon.ev[stat] = 0 if pokemon.ev[stat] < 0
+    consumed += 1
   end
-  msgs=swm_manageEvGain(-20, ev, pokemon)
-  for i in 0...msgs.length
-    scene.pbDisplay(msgs[i])
+
+  if consumed == 0
+    scene.pbDisplay(_INTL("It won't have any effect."))
+    return false, 0
   end
+
   pokemon.calcStats
   scene.pbRefresh
-  return true
-  #####/MODDED
-  #####MODDED, was if pokemon.happiness==255 && pokemon.ev[ev]==0
-  #####MODDED, was   scene.pbDisplay(_INTL("It won't have any effect."))
-  #####MODDED, was   return false
-  #####MODDED, was elsif pokemon.happiness==255
-  #####MODDED, was   pokemon.ev[ev]-=20
-  #####MODDED, was   pokemon.ev[ev]=0 if pokemon.ev[ev]<0
-  #####MODDED, was   pokemon.calcStats
-  #####MODDED, was   scene.pbRefresh
-  #####MODDED, was   scene.pbDisplay(messages[0])
-  #####MODDED, was   return true
-  #####MODDED, was elsif pokemon.ev[ev]==0
-  #####MODDED, was   pokemon.changeHappiness("EV berry")
-  #####MODDED, was   scene.pbRefresh
-  #####MODDED, was   scene.pbDisplay(messages[1])
-  #####MODDED, was   return true
-  #####MODDED, was else
-  #####MODDED, was   pokemon.changeHappiness("EV berry")
-  #####MODDED, was   pokemon.ev[ev]-=20
-  #####MODDED, was   pokemon.ev[ev]=0 if pokemon.ev[ev]<0
-  #####MODDED, was   pokemon.calcStats
-  #####MODDED, was   scene.pbRefresh
-  #####MODDED, was   scene.pbDisplay(messages[2])
-  #####MODDED, was   return true
-  #####MODDED, was end
+
+  if pokemon.happiness == 255 && originalev > pokemon.ev[stat]
+    scene.pbDisplay(_INTL("{1} adores you!\nThe base {2} fell!", pokemon.name, STATSTRINGS[stat]))
+  elsif pokemon.happiness == 255
+    #####MODDED, was scene.pbDisplay(_INTL("{1} adores you!\nThe base {2} can't fall!", pokemon.name, STATSTRINGS[stat]))
+    scene.pbDisplay(_INTL("{1} adores you!\nThe base {2} couldn't fall without overflowing!", pokemon.name, STATSTRINGS[stat])) ######MODDED
+  elsif originalev > pokemon.ev[stat]
+    scene.pbDisplay(_INTL("{1} turned friendly.\nThe base {2} fell!", pokemon.name, STATSTRINGS[stat]))
+  else
+    #####MODDED, was scene.pbDisplay(_INTL("{1} turned friendly.\nThe base {2} can't fall!", pokemon.name, STATSTRINGS[stat]))
+    scene.pbDisplay(_INTL("{1} turned friendly.\nThe base {2} couldn't fall without overflowing!", pokemon.name, STATSTRINGS[stat])) ######MODDED
+  end
+
+  return true, consumed
 end
 
 # Pls stop using the wrong SWM version on the wrong Reborn Episode :(
-swm_target_version='19'
-if !getversion().start_with?(swm_target_version)
+swm_target_version = '19'
+if !GAMEVERSION.start_with?(swm_target_version)
   Kernel.pbMessage(_INTL('Sorry, but this version of SWM was designed for Pokemon Reborn Episode {1}', swm_target_version))
   Kernel.pbMessage(_INTL('Using SWM in an episode it was not designed for is no longer allowed.'))
   Kernel.pbMessage(_INTL('It simply causes too many problems.'))
