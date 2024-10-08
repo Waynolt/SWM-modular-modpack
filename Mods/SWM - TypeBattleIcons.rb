@@ -3,10 +3,10 @@ class PokemonDataBox < SpriteWrapper
   #####MODDED
   def swm_setTypeBattleIcons
     swm_ensureTypeBitmaps
-    type1,type2=swm_getBattlerTyping
-    baseX,baseY=swm_getBaseTypeCoords
+    type1, type2 =swm_getBattlerTyping
+    baseX, baseY = swm_getBaseTypeCoords
     self.bitmap.blt(baseX,baseY,$swm_typeBitmaps[type1],$swm_typeBitmaps[type1].rect)
-    if type1!=type2
+    if !type2.nil? && (type1 != type2)
       dist=$swm_typeBitmaps[type1].rect.width # +3
       self.bitmap.blt(baseX+dist,baseY,$swm_typeBitmaps[type2],$swm_typeBitmaps[type2].rect)
     end
@@ -25,15 +25,38 @@ class PokemonDataBox < SpriteWrapper
 
   def swm_ensureTypeBitmaps
     return nil if !swm_shouldLoadTypeBitmaps
-    rawBmp=AnimatedBitmap.new('Data/Mods/SWM - TypeBattleIcons.png')
-    retval=[]
+    rawBmp=AnimatedBitmap.new('patch/Mods/SWM - TypeBattleIcons.png')
+    retval={}
     spriteWidth=32
     spriteHeight=12
+    map = [
+      :NORMAL,
+      :FIGHTING,
+      :FLYING,
+      :POISON,
+      :GROUND,
+      :ROCK,
+      :BUG,
+      :GHOST,
+      :STEEL,
+      :QMARKS,
+      :FIRE,
+      :WATER,
+      :GRASS,
+      :ELECTR,
+      :PSYCHIC,
+      :ICE,
+      :DRAGON,
+      :DARK,
+      :FAIRY,
+      :SHADOW
+    ]
     for i in 0..PBTypes.maxValue
       rect=Rect.new(0,i*spriteHeight,spriteWidth,spriteHeight)
       bitmap=Bitmap.new(rect.width, rect.height)
       bitmap.blt(0, 0, rawBmp.bitmap, rect)
-      retval.push(bitmap)
+      retval[map[i]] = bitmap
+      retval[i] = bitmap
     end
     $swm_typeBitmaps=retval
   end
@@ -49,10 +72,10 @@ class PokemonDataBox < SpriteWrapper
   end
 
   def swm_getBattlerTyping
-    if isConst?(@battler.ability,PBAbilities,:ILLUSION) && @battler.effects[PBEffects::Illusion]
+    if (@battler.ability == :ILLUSION) && @battler.effects[:Illusion]
       # Zorua
-      type1=@battler.effects[PBEffects::Illusion].type1
-      type2=@battler.effects[PBEffects::Illusion].type2
+      type1=@battler.effects[:Illusion].type1
+      type2=@battler.effects[:Illusion].type2
     else
       type1=@battler.type1
       type2=@battler.type2
@@ -75,7 +98,7 @@ class PokemonDataBox < SpriteWrapper
 end
 
 # Pls stop using the wrong SWM version on the wrong Reborn Episode :(
-swm_target_version='19'
+swm_target_version = '19'
 if !GAMEVERSION.start_with?(swm_target_version)
   Kernel.pbMessage(_INTL('Sorry, but this version of SWM was designed for Pokemon Reborn Episode {1}', swm_target_version))
   Kernel.pbMessage(_INTL('Using SWM in an episode it was not designed for is no longer allowed.'))
