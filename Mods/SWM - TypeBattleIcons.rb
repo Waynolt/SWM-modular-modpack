@@ -1,4 +1,4 @@
-$swm_typeBitmaps=nil # Force the reloading of disposed graphics on soft resetting
+$swm_typeBitmaps = nil # Force the reloading of disposed graphics on soft resetting
 class PokemonDataBox < SpriteWrapper
   #####MODDED
   def swm_setTypeBattleIcons
@@ -7,28 +7,28 @@ class PokemonDataBox < SpriteWrapper
     baseX, baseY = swm_getBaseTypeCoords
     self.bitmap.blt(baseX,baseY,$swm_typeBitmaps[type1],$swm_typeBitmaps[type1].rect)
     if !type2.nil? && (type1 != type2)
-      dist=$swm_typeBitmaps[type1].rect.width # +3
+      dist = $swm_typeBitmaps[type1].rect.width # +3
       self.bitmap.blt(baseX+dist,baseY,$swm_typeBitmaps[type2],$swm_typeBitmaps[type2].rect)
     end
   end
 
   def swm_getBaseTypeCoords
     if @doublebattle
-      baseX=@spritebaseX+8
-      baseY=@spritebaseY-1
+      baseX = @spritebaseX+8
+      baseY = @spritebaseY-1
     else
-      baseX=@spritebaseX+8
-      baseY=@spritebaseY-1
+      baseX = @spritebaseX+8
+      baseY = @spritebaseY-1
     end
     return baseX, baseY
   end
 
   def swm_ensureTypeBitmaps
     return nil if !swm_shouldLoadTypeBitmaps
-    rawBmp=AnimatedBitmap.new('patch/Mods/SWM - TypeBattleIcons.png')
-    retval={}
-    spriteWidth=32
-    spriteHeight=12
+    rawBmp = AnimatedBitmap.new('patch/Mods/SWM - TypeBattleIcons.png')
+    retval = {}
+    spriteWidth = 32
+    spriteHeight = 12
     map = [
       :NORMAL,
       :FIGHTING,
@@ -52,13 +52,13 @@ class PokemonDataBox < SpriteWrapper
       :SHADOW
     ]
     for i in 0..PBTypes.maxValue
-      rect=Rect.new(0,i*spriteHeight,spriteWidth,spriteHeight)
-      bitmap=Bitmap.new(rect.width, rect.height)
+      rect = Rect.new(0,i*spriteHeight,spriteWidth,spriteHeight)
+      bitmap = Bitmap.new(rect.width, rect.height)
       bitmap.blt(0, 0, rawBmp.bitmap, rect)
       retval[map[i]] = bitmap
       retval[i] = bitmap
     end
-    $swm_typeBitmaps=retval
+    $swm_typeBitmaps = retval
   end
 
   def swm_shouldLoadTypeBitmaps
@@ -74,11 +74,11 @@ class PokemonDataBox < SpriteWrapper
   def swm_getBattlerTyping
     if (@battler.ability == :ILLUSION) && @battler.effects[:Illusion]
       # Zorua
-      type1=@battler.effects[:Illusion].type1
-      type2=@battler.effects[:Illusion].type2
+      type1 = @battler.effects[:Illusion].type1
+      type2 = @battler.effects[:Illusion].type2
     else
-      type1=@battler.type1
-      type2=@battler.type2
+      type1 = @battler.type1
+      type2 = @battler.type2
     end
     return type1, type2
   end
@@ -90,7 +90,7 @@ class PokemonDataBox < SpriteWrapper
 
   def refresh(*args, **kwargs)
     #####MODDED
-    result=swm_typeBattleIcons_oldRefresh(*args, **kwargs)
+    result = swm_typeBattleIcons_oldRefresh(*args, **kwargs)
     swm_setTypeBattleIcons
     return result
     #####/MODDED

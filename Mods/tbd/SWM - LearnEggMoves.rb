@@ -1,13 +1,13 @@
 #####MODDED
 def swm_getAllEggMoves(pokemon)
-  moves=[]
-  babies=swm_getPossibleBabies(pokemon.species)
+  moves = []
+  babies = swm_getPossibleBabies(pokemon.species)
   for baby in babies
-    tmp=swm_getEggMoves(baby, pokemon.form)
+    tmp = swm_getEggMoves(baby, pokemon.form)
     moves.push(*tmp)
   end
-  moves|=[] # remove duplicates
-  retval=[]
+  moves |= [] # remove duplicates
+  retval = []
   for move in moves
     # next if level>pokemon.level # No need to check for level... we're talking egg moves here, remember?
     next if pokemon.knowsMove?(move)
@@ -17,21 +17,21 @@ def swm_getAllEggMoves(pokemon)
 end
 
 def swm_getPossibleBabies(species)
-  babyspecies=pbGetBabySpecies(species)
-  babies=[babyspecies, pbGetNonIncenseLowestSpecies(babyspecies)]
+  babyspecies = pbGetBabySpecies(species)
+  babies = [babyspecies, pbGetNonIncenseLowestSpecies(babyspecies)]
   if isConst?(babyspecies, PBSpecies,:MANAPHY) && hasConst?(PBSpecies, :PHIONE)
-    babyspecies=getConst(PBSpecies, :PHIONE)
+    babyspecies = getConst(PBSpecies, :PHIONE)
     babies.push(*[babyspecies, pbGetNonIncenseLowestSpecies(babyspecies)])
   end
-  babyspecies=[]
+  babyspecies = []
   if (babyspecies == PBSpecies::NIDORANfE) && hasConst?(PBSpecies,:NIDORANmA)
-    babyspecies=[(PBSpecies::NIDORANmA), (PBSpecies::NIDORANfE)]
+    babyspecies = [(PBSpecies::NIDORANmA), (PBSpecies::NIDORANfE)]
   elsif (babyspecies == PBSpecies::NIDORANmA) && hasConst?(PBSpecies,:NIDORANfE)
-    babyspecies=[(PBSpecies::NIDORANmA), (PBSpecies::NIDORANfE)]
+    babyspecies = [(PBSpecies::NIDORANmA), (PBSpecies::NIDORANfE)]
   elsif (babyspecies == PBSpecies::VOLBEAT) && hasConst?(PBSpecies,:ILLUMISE)
-    babyspecies=[PBSpecies::VOLBEAT, PBSpecies::ILLUMISE]
+    babyspecies = [PBSpecies::VOLBEAT, PBSpecies::ILLUMISE]
   elsif (babyspecies == PBSpecies::ILLUMISE) && hasConst?(PBSpecies,:VOLBEAT)
-    babyspecies=[PBSpecies::VOLBEAT, PBSpecies::ILLUMISE]
+    babyspecies = [PBSpecies::VOLBEAT, PBSpecies::ILLUMISE]
   end
   for baby in babyspecies
     babies.push(*[baby, pbGetNonIncenseLowestSpecies(baby)])
@@ -40,12 +40,12 @@ def swm_getPossibleBabies(species)
 end
 
 def swm_getEggMoves(babyspecies, form)
-  moves=[]
-  egg=PokeBattle_Pokemon.new(babyspecies,EGGINITIALLEVEL,$Trainer)
+  moves = []
+  egg = PokeBattle_Pokemon.new(babyspecies,EGGINITIALLEVEL,$Trainer)
   egg.form = form
   name = egg.getFormName
 	formcheck = PokemonForms.dig(egg.species,name,:EggMoves)
-  if formcheck!=nil
+  if formcheck != nil
     for move in formcheck
       atk = getID(PBMoves,move)
       moves.push(atk)
@@ -70,10 +70,10 @@ end
 #####/MODDED
 
 def pbGetRelearnableMoves(pokemon, *args, **kwargs)
-  moves=swm_learnEggMoves_oldPbGetRelearnableMoves(pokemon, *args, **kwargs)
-  emoves=swm_getAllEggMoves(pokemon)
+  moves = swm_learnEggMoves_oldPbGetRelearnableMoves(pokemon, *args, **kwargs)
+  emoves = swm_getAllEggMoves(pokemon)
   moves.push(*emoves)
-  moves|=[] # remove duplicates
+  moves |= [] # remove duplicates
   # moves.sort { |atkA, atkB| PBMoves.getName(atkA) <=> PBMoves.getName(atkB) }
   return moves
 end

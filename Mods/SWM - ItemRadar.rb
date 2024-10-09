@@ -1,5 +1,5 @@
 #####MODDED
-Events.onStepTaken+=proc {
+Events.onStepTaken += proc {
 	$game_screen.swm_updateRadar
 }
 
@@ -9,21 +9,21 @@ ItemHandlers::UseInField.add(:ITEMFINDER,proc{|item|
 })
 #####/MODDED
 
-$swm_itemRadarMarkersLayerBitmap=nil # Force the reloading of disposed graphics on soft resetting
+$swm_itemRadarMarkersLayerBitmap = nil # Force the reloading of disposed graphics on soft resetting
 class Game_Screen
 	#####MODDED
 	attr_accessor   :swm_itemRadarIsOn
 	
 	def swm_checkIsItemRadarOn?
-    @swm_itemRadarIsOn=false if !defined?(@swm_itemRadarIsOn)
+    @swm_itemRadarIsOn = false if !defined?(@swm_itemRadarIsOn)
 		if @swm_itemRadarIsOn
 			if !defined?($swm_itemRadarMarkersLayer) || $swm_itemRadarMarkersLayer.disposed?
-				$swm_itemRadarMarkersLayer=Sprite.new(nil)
-				$swm_itemRadarMarkersLayer.bitmap=Bitmap.new(Graphics.width, Graphics.height)
-				$swm_itemRadarMarkersLayer.ox=0
-				$swm_itemRadarMarkersLayer.oy=0
-				$swm_itemRadarMarkersLayer.z=9998
-				$swm_itemRadarMarkersLayer.visible=true
+				$swm_itemRadarMarkersLayer = Sprite.new(nil)
+				$swm_itemRadarMarkersLayer.bitmap = Bitmap.new(Graphics.width, Graphics.height)
+				$swm_itemRadarMarkersLayer.ox = 0
+				$swm_itemRadarMarkersLayer.oy = 0
+				$swm_itemRadarMarkersLayer.z = 9998
+				$swm_itemRadarMarkersLayer.visible = true
 			end
 		end
 		return @swm_itemRadarIsOn
@@ -31,12 +31,12 @@ class Game_Screen
 	
 	def swm_itemRadarCheckScroll(deltaX, deltaY)
 		return nil if !swm_checkIsItemRadarOn?
-    $swm_itemRadarMarkersLayer.ox=($game_player.real_x/Game_Map::XSUBPIXEL)-(($game_player.x-deltaX)*Game_Map::TILEWIDTH)
-    $swm_itemRadarMarkersLayer.oy=($game_player.real_y/Game_Map::YSUBPIXEL)-(($game_player.y-deltaY)*Game_Map::TILEHEIGHT)
+    $swm_itemRadarMarkersLayer.ox = ($game_player.real_x/Game_Map::XSUBPIXEL)-(($game_player.x-deltaX)*Game_Map::TILEWIDTH)
+    $swm_itemRadarMarkersLayer.oy = ($game_player.real_y/Game_Map::YSUBPIXEL)-(($game_player.y-deltaY)*Game_Map::TILEHEIGHT)
 	end
 	
 	def swm_toggleRadar
-		@swm_itemRadarIsOn=!@swm_itemRadarIsOn
+		@swm_itemRadarIsOn = !@swm_itemRadarIsOn
 		if swm_checkIsItemRadarOn?
 			Kernel.pbMessage(_INTL('The ITEMFINDER is now ON.'))
 		else
@@ -52,15 +52,15 @@ class Game_Screen
 	def swm_updateRadar
 		return nil if !swm_checkIsItemRadarOn?
     if !$swm_itemRadarMarkersLayerBitmap
-      $swm_itemRadarMarkersLayerBitmap=AnimatedBitmap.new('patch/Mods/SWM - ItemRadar.png')
+      $swm_itemRadarMarkersLayerBitmap = AnimatedBitmap.new('patch/Mods/SWM - ItemRadar.png')
     end
-    playerX=$game_player.x
-    playerY=$game_player.y
-    offsetX=((Graphics.width-Game_Map::TILEWIDTH)/2)
-    offsetY=((Graphics.height-Game_Map::TILEHEIGHT)/2)
-    $swm_itemRadarMarkersLayer.bitmap=Bitmap.new(Graphics.width,Graphics.height)
-    $swm_itemRadarMarkersLayer.ox=0
-    $swm_itemRadarMarkersLayer.oy=0
+    playerX = $game_player.x
+    playerY = $game_player.y
+    offsetX = ((Graphics.width-Game_Map::TILEWIDTH)/2)
+    offsetY = ((Graphics.height-Game_Map::TILEHEIGHT)/2)
+    $swm_itemRadarMarkersLayer.bitmap = Bitmap.new(Graphics.width,Graphics.height)
+    $swm_itemRadarMarkersLayer.ox = 0
+    $swm_itemRadarMarkersLayer.oy = 0
     #Find and print items
     for event in $game_map.events.values
       next if event.name != 'HiddenItem'
@@ -84,22 +84,22 @@ end
 
 class Game_Map
 	def scroll_down(distance)
-		self.display_y+=distance
+		self.display_y += distance
 		$game_screen.swm_itemRadarCheckScroll(0, +1) #####MODDED
 	end
 
 	def scroll_left(distance)
-		self.display_x-=distance
+		self.display_x -= distance
 		$game_screen.swm_itemRadarCheckScroll(-1, 0) #####MODDED
 	end
 
 	def scroll_right(distance)
-		self.display_x+=distance
+		self.display_x += distance
 		$game_screen.swm_itemRadarCheckScroll(+1, 0) #####MODDED
 	end
 
 	def scroll_up(distance)
-		self.display_y-=distance
+		self.display_y -= distance
 		$game_screen.swm_itemRadarCheckScroll(0, -1) #####MODDED
 	end
 end

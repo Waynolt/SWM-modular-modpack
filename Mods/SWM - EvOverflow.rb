@@ -4,7 +4,7 @@ SWM_EV_LIMIT_GLOBAL   = 510
 
 def swm_manageEvGain(evgain, k, thispoke)
   return [] if evgain == 0
-  messages=swm_handleIvEvGain(evgain, k, thispoke)
+  messages = swm_handleIvEvGain(evgain, k, thispoke)
   swm_handleEvLimit(evgain, k, thispoke)
   return messages
 end
@@ -12,31 +12,31 @@ end
 def swm_handleIvEvGain(evgain, k, thispoke)
   if swm_getMonHasPowerItem(thispoke)
     # Excess EVs will be recovered later, in swm_handleEvLimit
-    allowedGain=evgain
+    allowedGain = evgain
   else
     # This will prevent swm_handleEvLimit from lowering EVs if evgain is positive 
-    maxGain=swm_getEvsForReachingTheGlobalLimit(thispoke)
-    allowedGain=[maxGain, evgain].min
+    maxGain = swm_getEvsForReachingTheGlobalLimit(thispoke)
+    allowedGain = [maxGain, evgain].min
   end
-  startIv=thispoke.iv[k]
-  thispoke.ev[k]+=allowedGain # evgain can be lower than 0
+  startIv = thispoke.iv[k]
+  thispoke.ev[k] += allowedGain # evgain can be lower than 0
   while thispoke.ev[k] > SWM_EV_LIMIT_PER_STAT
     if thispoke.iv[k] < 31
-      thispoke.ev[k]-=SWM_EV_LIMIT_PER_STAT
-      thispoke.iv[k]+=1
+      thispoke.ev[k] -= SWM_EV_LIMIT_PER_STAT
+      thispoke.iv[k] += 1
     else
-      thispoke.ev[k]=SWM_EV_LIMIT_PER_STAT
+      thispoke.ev[k] = SWM_EV_LIMIT_PER_STAT
     end
   end
   while thispoke.ev[k] < 0
     if thispoke.iv[k] > 0
-      thispoke.ev[k]+=SWM_EV_LIMIT_PER_STAT
-      thispoke.iv[k]-=1
+      thispoke.ev[k] += SWM_EV_LIMIT_PER_STAT
+      thispoke.iv[k] -= 1
     else
-      thispoke.ev[k]=0
+      thispoke.ev[k] = 0
     end
   end
-  ivgain=thispoke.iv[k]-startIv
+  ivgain = thispoke.iv[k]-startIv
   return swm_notifyIvChange(k, thispoke, ivgain)
 end
 
@@ -51,17 +51,17 @@ def swm_notifyIvChange(k, thispoke, ivgain)
   return [] if ivgain == 0
   case k
     when 0
-      stat='Hit Points'
+      stat = 'Hit Points'
     when 1
-      stat='Attack'
+      stat = 'Attack'
     when 2
-      stat='Defense'
+      stat = 'Defense'
     when 3
-      stat='Speed'
+      stat = 'Speed'
     when 4
-      stat='Special Attack'
+      stat = 'Special Attack'
     when 5
-      stat='Special Defense'
+      stat = 'Special Defense'
   end
   # case thispoke.gender
   #   when 0
@@ -89,51 +89,51 @@ end
 
 def swm_handleEvLimit(evgain, k, thispoke)
   # Redistribute by removing from the lowest ev
-  evdiff=-(swm_getEvsForReachingTheGlobalLimit(thispoke))
+  evdiff = -(swm_getEvsForReachingTheGlobalLimit(thispoke))
   if evgain < 0 && evdiff > 0
     # Reduce the EV we were already reducing first
     # Don't reduce the IV further - we do not want to risk a loop
-    lowerBy=[thispoke.ev[k], evdiff].min
-    thispoke.ev[k]-=lowerBy
-    evdiff-=lowerBy
+    lowerBy = [thispoke.ev[k], evdiff].min
+    thispoke.ev[k] -= lowerBy
+    evdiff -= lowerBy
   end
   while evdiff > 0
-    ev=swm_getLowestEv(k, thispoke) # Never results in k
+    ev = swm_getLowestEv(k, thispoke) # Never results in k
     break if ev < 0 # All 0 already (???)
-    lowerBy=[thispoke.ev[ev], evdiff].min
-    thispoke.ev[ev]-=lowerBy
-    evdiff-=lowerBy
+    lowerBy = [thispoke.ev[ev], evdiff].min
+    thispoke.ev[ev] -= lowerBy
+    evdiff -= lowerBy
   end
 end
 
 def swm_getEvsForReachingTheGlobalLimit(thispoke)
   # Redistribute by removing from the lowest ev
   if $game_switches[:No_Total_EV_Cap]
-    maxRemainingEvGlobal=SWM_EV_LIMIT_PER_STAT * thispoke.ev.length
+    maxRemainingEvGlobal = SWM_EV_LIMIT_PER_STAT * thispoke.ev.length
   else
-    maxRemainingEvGlobal=SWM_EV_LIMIT_GLOBAL
+    maxRemainingEvGlobal = SWM_EV_LIMIT_GLOBAL
   end
   for i in 0...thispoke.ev.length
-    maxRemainingEvGlobal-=thispoke.ev[i]
+    maxRemainingEvGlobal -= thispoke.ev[i]
   end
   return maxRemainingEvGlobal
 end
 
 def swm_getLowestEv(k, thispoke)
-  lowestVal=0
-  retval=[]
+  lowestVal = 0
+  retval = []
   for ev in 0...thispoke.ev.length
     next if ev == k
     next if thispoke.ev[ev] <= 0
     if retval.length <= 0 || lowestVal > thispoke.ev[ev]
-      lowestVal=thispoke.ev[ev]
-      retval=[ev]
+      lowestVal = thispoke.ev[ev]
+      retval = [ev]
     elsif lowestVal == thispoke.ev[ev]
       retval.push(ev)
     end
   end
   return -1 if retval.length <= 0
-  randId=rand(retval.length)
+  randId = rand(retval.length)
   return retval[randId]
 end
 #####/MODDED
@@ -209,7 +209,7 @@ def useEVBerry(pokemon, scene, amount, stat)
     else
       break
     end
-    msgs=swm_manageEvGain(-20, stat, pokemon)
+    msgs = swm_manageEvGain(-20, stat, pokemon)
     for i in 0...msgs.length
       scene.pbDisplay(msgs[i])
     end

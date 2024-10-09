@@ -1,14 +1,14 @@
 #####MODDED
-$swm_loadedSharedBox=false
+$swm_loadedSharedBox = false
 
 def swm_getSharedSaveFile
-  folder=RTP.getSaveFolder().gsub(/[\/\\]$/,'')+'/../Pokemon Shared PC'
+  folder = RTP.getSaveFolder().gsub(/[\/\\]$/,'')+'/../Pokemon Shared PC'
   Dir.mkdir(folder) unless (File.exists?(folder))
   return "#{folder}/SharedBox.rxdata"
 end
 
 def swm_loadSharedBox
-  $swm_loadedSharedBox=true
+  $swm_loadedSharedBox = true
   return nil if !$PokemonStorage
   return nil if !swm_ensureSharedSavedFile
   File.open(swm_getSharedSaveFile){|f|
@@ -17,20 +17,20 @@ def swm_loadSharedBox
 end
 
 def swm_ensureSharedSavedFile
-  sharedSavefile=swm_getSharedSaveFile
+  sharedSavefile = swm_getSharedSaveFile
   return true if safeExists?(sharedSavefile)
   # The file doesn't exist - create one
-  $swm_loadedSharedBox=true # This way swm_saveSharedBox will save it even if it was not loaded
+  $swm_loadedSharedBox = true # This way swm_saveSharedBox will save it even if it was not loaded
   return swm_saveSharedBox
 end
 
 def swm_saveSharedBox
   return false if !$swm_loadedSharedBox
   return false if !defined?($PokemonStorage)
-  sharedSavefile=swm_getSharedSaveFile
-  sharedSavefileTmp="#{sharedSavefile}.tmp"
-  sharedSavefileBackup="#{sharedSavefile}.bak"
-  boxNum=$PokemonStorage.swm_getSharedBoxId(true)
+  sharedSavefile = swm_getSharedSaveFile
+  sharedSavefileTmp = "#{sharedSavefile}.tmp"
+  sharedSavefileBackup = "#{sharedSavefile}.bak"
+  boxNum = $PokemonStorage.swm_getSharedBoxId(true)
   if !boxNum
     Kernel.pbMessage(_INTL('ERROR: could not find an empty box in the PC to be used as the Shared Box'))
     return false
@@ -58,7 +58,7 @@ class StorageSystemPC
     #####MODDED
     # swm_getSharedBoxId(false) returns nil if no shared box has ever been loaded
     # If this is the case, try to load it now
-    boxNum=$PokemonStorage.swm_getSharedBoxId(false)
+    boxNum = $PokemonStorage.swm_getSharedBoxId(false)
     swm_loadSharedBox if !boxNum
     return swm_sharedPC_oldAccess(*args, **kwargs)
     #####/MODDED
@@ -81,13 +81,13 @@ class PokemonStorage
     # Is there already a Shared Box?
     for boxNum in (self.maxBoxes-1).downto(0)
       next if !self.swm_isOldSharedBox?(boxNum)
-      @swm_sharedBoxNum=boxNum
+      @swm_sharedBoxNum = boxNum
       return @swm_sharedBoxNum
     end
     # Find the last empty box
     for boxNum in (self.maxBoxes-1).downto(0)
       next if !self.swm_isBoxEmpty?(boxNum)
-      @swm_sharedBoxNum=boxNum
+      @swm_sharedBoxNum = boxNum
       return @swm_sharedBoxNum
     end
     return nil
@@ -98,7 +98,7 @@ class PokemonStorage
   end
 
   def swm_isBoxEmpty?(boxNum)
-    contents=@boxes[boxNum]
+    contents = @boxes[boxNum]
     for i in 0...contents.length
       return false if contents[i]
     end
@@ -109,20 +109,20 @@ class PokemonStorage
     return false if !$Trainer # Wait, what? We can have a PC but no player???
     # Only load the box if we already have loaded a box before
     # or if we can find an empty box to use
-    boxNum=self.swm_getSharedBoxId(true)
+    boxNum = self.swm_getSharedBoxId(true)
     if !boxNum
       Kernel.pbMessage(_INTL('ERROR: could not find an empty box in the PC to be used as the Shared Box'))
       return false
     end
-    @boxes[boxNum]=value
-    @boxes[boxNum].name='Shared Box'
+    @boxes[boxNum] = value
+    @boxes[boxNum].name = 'Shared Box'
     # Update the pokedex
     for i in 0...value.length
-      poke=value[i]
+      poke = value[i]
       next if !poke
       next if poke.isEgg?
-      $Trainer.seen[poke.species]=true
-      $Trainer.owned[poke.species]=true
+      $Trainer.seen[poke.species] = true
+      $Trainer.owned[poke.species] = true
     end
     return true
   end
@@ -136,7 +136,7 @@ class PokemonLoad
   end
 
   def pbStartLoadScreen(*args, **kwargs)
-    result=swm_sharedPC_oldPbStartLoadScreen(*args, **kwargs)
+    result = swm_sharedPC_oldPbStartLoadScreen(*args, **kwargs)
     swm_loadSharedBox
     return result
   end
@@ -151,7 +151,7 @@ end
 
 def pbSave(*args, **kwargs)
   #####MODDED
-  result=swm_sharedPC_oldPbSave(*args, **kwargs)
+  result = swm_sharedPC_oldPbSave(*args, **kwargs)
   swm_saveSharedBox
   return result
   #####/MODDED
