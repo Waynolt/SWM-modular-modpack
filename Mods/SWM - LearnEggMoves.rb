@@ -17,50 +17,42 @@ def swm_getAllEggMoves(pokemon)
 end
 
 def swm_getPossibleBabies(species)
-  babyspecies = pbGetBabySpecies(species)
-  babies = [babyspecies, pbGetNonIncenseLowestSpecies(babyspecies)]
-  if isConst?(babyspecies, PBSpecies,:MANAPHY) && hasConst?(PBSpecies, :PHIONE)
-    babyspecies = getConst(PBSpecies, :PHIONE)
-    babies.push(*[babyspecies, pbGetNonIncenseLowestSpecies(babyspecies)])
+  babyspecies = pbGetBabySpecies(species)[0]
+  babies = [babyspecies, pbGetNonIncenseLowestSpecies(babyspecies, 0)[0]]
+  if babyspecies == :MANAPHY
+    babyspecies = :PHIONE
+    babies.push(*[babyspecies, pbGetNonIncenseLowestSpecies(babyspecies, 0)[0]])
   end
-  babyspecies = []
-  if (babyspecies == PBSpecies::NIDORANfE) && hasConst?(PBSpecies,:NIDORANmA)
-    babyspecies = [(PBSpecies::NIDORANmA), (PBSpecies::NIDORANfE)]
-  elsif (babyspecies == PBSpecies::NIDORANmA) && hasConst?(PBSpecies,:NIDORANfE)
-    babyspecies = [(PBSpecies::NIDORANmA), (PBSpecies::NIDORANfE)]
-  elsif (babyspecies == PBSpecies::VOLBEAT) && hasConst?(PBSpecies,:ILLUMISE)
-    babyspecies = [PBSpecies::VOLBEAT, PBSpecies::ILLUMISE]
-  elsif (babyspecies == PBSpecies::ILLUMISE) && hasConst?(PBSpecies,:VOLBEAT)
-    babyspecies = [PBSpecies::VOLBEAT, PBSpecies::ILLUMISE]
+  if babyspecies == :NIDORANfE
+    tmp = [(:NIDORANmA), (:NIDORANfE)]
+  elsif babyspecies == :NIDORANmA
+    tmp = [(:NIDORANmA), (:NIDORANfE)]
+  elsif babyspecies == :VOLBEAT
+    tmp = [:VOLBEAT, :ILLUMISE]
+  elsif babyspecies == :ILLUMISE
+    tmp = [:VOLBEAT, :ILLUMISE]
+  else
+    tmp = []
   end
-  for baby in babyspecies
-    babies.push(*[baby, pbGetNonIncenseLowestSpecies(baby)])
+  for baby in tmp
+    babies.push(*[baby, pbGetNonIncenseLowestSpecies(baby, 0)[0]])
   end
   return babies|[] # Remove duplicates
 end
 
 def swm_getEggMoves(babyspecies, form)
   moves = []
-  egg = PokeBattle_Pokemon.new(babyspecies,EGGINITIALLEVEL,$Trainer)
-  egg.form = form
-  name = egg.getFormName
-	formcheck = PokemonForms.dig(egg.species,name,:EggMoves)
-  if formcheck != nil
-    for move in formcheck
-      atk = getID(PBMoves,move)
-      moves.push(atk)
-    end
-  else 
+	formcheck = $cache.pkmn[babyspecies, form].EggMoves
+  if formcheck.nil?
     movelist = $cache.pkmn_egg[babyspecies]
     if movelist
-      for i in movelist
-        atk = getID(PBMoves,i)
-        moves.push(atk)
-      end
+      moves.push(*movelist)
     end
+  else
+    moves.push(*formcheck)
   end
   # Volt Tackle
-  moves.push(PBMoves::VOLTTACKLE) if [PBSpecies::PICHU, PBSpecies::PIKACHU, PBSpecies::RAICHU].include?(babyspecies)
+  moves.push(:VOLTTACKLE) if [:PICHU, :PIKACHU, :RAICHU].include?(babyspecies)
   return moves|[] # remove duplicates
 end
 
@@ -74,7 +66,7 @@ def pbGetRelearnableMoves(pokemon, *args, **kwargs)
   emoves = swm_getAllEggMoves(pokemon)
   moves.push(*emoves)
   moves |= [] # remove duplicates
-  # moves.sort { |atkA, atkB| PBMoves.getName(atkA) <=> PBMoves.getName(atkB) }
+  # moves.sort { |atkA, atkB| getMoveName(atkA) <=> getMoveName(atkB) }
   return moves
 end
 
