@@ -81,8 +81,9 @@ class PokemonScreen
     newSpecies, newForm = swm_getNewSpecies(pkmn.species)
     return nil if !newSpecies
     oldSpecies = pkmn.species
-    swm_updateOwned(oldSpecies, newSpecies)
-    swm_updateMon(pkmn, oldSpecies, newSpecies, newForm)
+    oldForm = pkmn.form
+    swm_updateOwned(oldSpecies, oldForm, newSpecies, newForm)
+    swm_updateMon(pkmn, oldSpecies, oldForm, newSpecies, newForm)
     # Is the new mon legal?
     if swm_isIllegalMonSpecies?(pkmn.species)
       Kernel.pbMessage(_INTL('Warning: this is an illegal mon'))
@@ -90,13 +91,8 @@ class PokemonScreen
     end
   end
 
-  def swm_getFormNames(speciesId)
-    formnames = pbGetMessage(MessageTypes::FormNames, speciesId)
-    if !formnames || formnames == ''
-      formnames = ['']
-    else
-      formnames = strsplit(formnames,/,/)
-    end
+  def swm_getFormNames(species)
+    formnames = $cache.pkmn[species].forms.values
     hasAlolan = false
     idAlternate = -1
     result = []
@@ -122,22 +118,16 @@ class PokemonScreen
   end
 
   def swm_isAvailableYet?(pokedexID)
-    # # Unavailable mons' species ids
-    # unavailable = []
-    # return !unavailable.include?(pokedexID)
-
+    return true # The game is done - just allow everything
     # Simply check if its sprite exists
-    species = "#{pokedexID}".rjust(3, '0')
-    filename = "Graphics/Battlers/#{species}"
-    return !!pbResolveBitmap(filename)
+    # species = "#{pokedexID}".rjust(3, '0')
+    # filename = "Graphics/Battlers/#{species}"
+    # return !!pbResolveBitmap(filename)
   end
 
   def swm_isAlternateFormsPackInstalled?
     # Can also handle Aevian Misdreavus, with the only downside of renaming Alolan to Alternate
     return true
-    # # Is this the alternate forms pack mod? Ask drapion!
-    # formnames = swm_getFormNames(getID(PBSpecies, :DRAPION))
-    # return formnames.length > 1
   end
 
   def swm_getNewSpecies(oldSpecies)
@@ -168,19 +158,20 @@ class PokemonScreen
     return nil, 0 if ![0, 1].include?(choice)
     if choice == 0
       params = ChooseNumberParams.new
-      params.setRange(1,PBSpecies.maxValue)
-      params.setDefaultValue(oldSpecies)
+      params.setRange(1, $cache.pkmn.keys.length)
+      params.setDefaultValue(1)
       newSpecies = Kernel.pbMessageChooseNumber(_INTL('Select a new pokedex ID'), params)
+      newSpecies = $cache.pkmn.keys[newSpecies - 1]
     else
       nameIn = pbEnterPokemonName(_INTL('Name of the new species?'), 0, 15, '')
       nameInDown = nameIn.downcase
       found = []
-      for i in 1..PBSpecies.maxValue
-        name = PBSpecies.getName(i)
+      $cache.pkmn.each_key { |species|
+        name = getMonName(species)
         tmp = name.downcase
         next if !tmp.include?(nameInDown)
-        found.push([i, name])
-      end
+        found.push([species, name])
+      }
       if found.length < 1
         Kernel.pbMessage(_INTL('Sorry, {1} was not found.', nameIn))
         return nil, 0
@@ -235,37 +226,38 @@ class PokemonScreen
   end
 
   def swm_getPossibleBabies(species)
-    babyspecies = pbGetBabySpecies(species)
-    babies = [babyspecies, pbGetNonIncenseLowestSpecies(babyspecies)]
-    if isConst?(babyspecies, PBSpecies,:MANAPHY) && hasConst?(PBSpecies, :PHIONE)
-      babyspecies = getConst(PBSpecies, :PHIONE)
-      babies.push(*[babyspecies, pbGetNonIncenseLowestSpecies(babyspecies)])
+    babyspecies = pbGetBabySpecies(species)[0]
+    babies = [babyspecies, pbGetNonIncenseLowestSpecies(babyspecies, 0)[0]]
+    if babyspecies == :MANAPHY
+      babyspecies = :PHIONE
+      babies.push(*[babyspecies, pbGetNonIncenseLowestSpecies(babyspecies, 0)[0]])
     end
-    babyspecies = []
-    if (babyspecies == PBSpecies::NIDORANfE) && hasConst?(PBSpecies,:NIDORANmA)
-      babyspecies = [(PBSpecies::NIDORANmA), (PBSpecies::NIDORANfE)]
-    elsif (babyspecies == PBSpecies::NIDORANmA) && hasConst?(PBSpecies,:NIDORANfE)
-      babyspecies = [(PBSpecies::NIDORANmA), (PBSpecies::NIDORANfE)]
-    elsif (babyspecies == PBSpecies::VOLBEAT) && hasConst?(PBSpecies,:ILLUMISE)
-      babyspecies = [PBSpecies::VOLBEAT, PBSpecies::ILLUMISE]
-    elsif (babyspecies == PBSpecies::ILLUMISE) && hasConst?(PBSpecies,:VOLBEAT)
-      babyspecies = [PBSpecies::VOLBEAT, PBSpecies::ILLUMISE]
+    if babyspecies == :NIDORANfE
+      tmp = [(:NIDORANmA), (:NIDORANfE)]
+    elsif babyspecies == :NIDORANmA
+      tmp = [(:NIDORANmA), (:NIDORANfE)]
+    elsif babyspecies == :VOLBEAT
+      tmp = [:VOLBEAT, :ILLUMISE]
+    elsif babyspecies == :ILLUMISE
+      tmp = [:VOLBEAT, :ILLUMISE]
+    else
+      tmp = []
     end
-    for baby in babyspecies
-      babies.push(*[baby, pbGetNonIncenseLowestSpecies(baby)])
+    for baby in tmp
+      babies.push(*[baby, pbGetNonIncenseLowestSpecies(baby, 0)[0]])
     end
     return babies|[] # Remove duplicates
   end
 
   def swm_getAllBabySpecies(accountForMultipleForms, alternateFormsPackInstalled)
     allBabies = []
-    for species in 1..PBSpecies.maxValue
+    $cache.pkmn.each_key { |species|
       next if !swm_isAvailableYet?(species)
-      next if PBSpecies.getName(species) == ''
+      next if getMonName(species) == ''
       next if swm_isIllegalMonSpecies?(species)
       babies = swm_getPossibleBabies(species)
       allBabies.push(*babies)
-    end
+    }
     allBabies = allBabies|[] # Remove duplicates
     return allBabies if !accountForMultipleForms
     # Add the species multiple times if it has unchangeable alternative forms
@@ -307,18 +299,20 @@ class PokemonScreen
     return newSpecies, 0
   end
 
-  def swm_updateOwned(oldSpecies, newSpecies)
-    $Trainer.seen[oldSpecies] = false
-    $Trainer.owned[oldSpecies] = false
-    $Trainer.seen[newSpecies] = true
-    $Trainer.owned[newSpecies] = true
+  def swm_updateOwned(oldSpecies, oldForm, newSpecies, newForm)
+    $Trainer.pokedex.dexList[oldSpecies][:seen?] = false
+    $Trainer.pokedex.dexList[oldSpecies][:owned?] = false
+    $Trainer.pokedex.dexList[oldSpecies][:formsOwned][oldForm] = false
+    $Trainer.pokedex.dexList[newSpecies][:seen?] = true
+    $Trainer.pokedex.dexList[newSpecies][:owned?] = true
+    $Trainer.pokedex.dexList[newSpecies][:formsOwned][newForm] = true
   end
 
-  def swm_updateMon(pkmn, oldSpecies, newSpecies, newForm)
+  def swm_updateMon(pkmn, oldSpecies, oldForm, newSpecies, newForm)
     pkmn.species = newSpecies # Species
     pkmn.form = newForm # Normal/Alolan/Alternate form
     pkmn.makeUnmega if pkmn.isMega? # Mega
-    pkmn.name = PBSpecies.getName(newSpecies) if pkmn.name == PBSpecies.getName(oldSpecies) # Name
+    pkmn.name = getMonName(newSpecies, newForm) if pkmn.name == getMonName(oldSpecies, oldForm) # Name
     swm_updateMoves(pkmn) # Moves
     pkmn.calcStats # Stats
   end
@@ -326,7 +320,7 @@ class PokemonScreen
   def swm_updateMoves(pkmn)
     # Delete the old moves
     for i in 0..4
-      pkmn.pbDeleteMoveAtIndex(0)
+      pbDeleteMove(pkmn, 0)
     end
     # Get the moves
     moves = []
@@ -336,26 +330,23 @@ class PokemonScreen
         moves.push(k[1])
       end
     end
+
+    moves = moves.reverse
+    moves |= [] # remove duplicates
+    moves = moves.reverse # This is to ensure deletion of duplicates is from the start, not the end
+
     finalmoves = []
-    finalmoves_id = []
-    listend = moves.length-4
-    listend = 0 if listend<0
+    listend = moves.length - 4
+    listend = 0 if listend < 0
     j = 0
     for i in listend..listend+3
-      moveid = (i >= moves.length) ? 0 : moves[i]
-      for iID in finalmoves_id
-        if moveid == iID
-          moveid = 0
-          break
-        end
-      end
-      finalmoves[j] = PBMove.new(moveid)
-      finalmoves_id[j] = moveid
+      moveid = (i >= moves.length) ? nil : moves[i]
+      finalmoves[j] = moveid.nil? ? nil : PBMove.new(moveid)
       j += 1
     end
     # Set the new moves
     for i in 0..3
-      pkmn.moves[i] = finalmoves[i]
+      pkmn.moves[i] = finalmoves[i] if finalmoves[i]
     end
     pkmn.pbRecordFirstMoves
   end

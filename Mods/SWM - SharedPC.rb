@@ -121,8 +121,9 @@ class PokemonStorage
       poke = value[i]
       next if !poke
       next if poke.isEgg?
-      $Trainer.seen[poke.species] = true
-      $Trainer.owned[poke.species] = true
+      $Trainer.pokedex.dexList[poke.species][:seen?] = true
+      $Trainer.pokedex.dexList[poke.species][:owned?] = true
+      $Trainer.pokedex.dexList[poke.species][:formsOwned][poke.form] = true
     end
     return true
   end
