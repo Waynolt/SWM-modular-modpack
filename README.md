@@ -141,7 +141,9 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
-
+v80
+* Bugfix ReusablePremierBalls: deflected balls are not to be lost.
+* Bugfix TypeBattleIcons: fixed a typo.
 
 v79
 * Dropped RestToWait (obsolete).

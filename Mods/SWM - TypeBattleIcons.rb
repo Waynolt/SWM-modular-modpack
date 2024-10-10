@@ -3,7 +3,7 @@ class PokemonDataBox < SpriteWrapper
   #####MODDED
   def swm_setTypeBattleIcons
     swm_ensureTypeBitmaps
-    type1, type2 =swm_getBattlerTyping
+    type1, type2 = swm_getBattlerTyping
     baseX, baseY = swm_getBaseTypeCoords
     self.bitmap.blt(baseX,baseY,$swm_typeBitmaps[type1],$swm_typeBitmaps[type1].rect)
     if !type2.nil? && (type1 != type2)
@@ -43,7 +43,7 @@ class PokemonDataBox < SpriteWrapper
       :FIRE,
       :WATER,
       :GRASS,
-      :ELECTR,
+      :ELECTRIC,
       :PSYCHIC,
       :ICE,
       :DRAGON,
