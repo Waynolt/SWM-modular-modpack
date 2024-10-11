@@ -141,6 +141,10 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
+
+v81
+* Bugfix SharedPC: check that the pokedex exists before trying to update it
+
 v80
 * Bugfix ReusablePremierBalls: deflected balls are not to be lost.
 * Bugfix TypeBattleIcons: fixed a typo.
