@@ -142,6 +142,9 @@ If there's any I forgot about, sorry; simply ask about them.
  
 <details>
 
+v82
+* It appears that the Psychic TM is indeed a thing.
+
 v81
 * Bugfix SharedPC: check that the pokedex exists before trying to update it.
 
