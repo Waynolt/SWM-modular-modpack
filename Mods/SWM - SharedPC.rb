@@ -106,7 +106,7 @@ class PokemonStorage
   end
 
   def swm_setSharedBoxContents(value)
-    return false if !$Trainer # Wait, what? We can have a PC but no player???
+    return false if !$Trainer || $Trainer.nil? # Wait, what? We can have a PC but no player???
     # Only load the box if we already have loaded a box before
     # or if we can find an empty box to use
     boxNum = self.swm_getSharedBoxId(true)
@@ -117,15 +117,15 @@ class PokemonStorage
     @boxes[boxNum] = value
     @boxes[boxNum].name = 'Shared Box'
     # Update the pokedex
-    for i in 0...value.length
-      poke = value[i]
-      next if !poke
-      next if poke.isEgg?
-      next if !$Trainer.pokedex
-      next if !$Trainer.pokedex.dexList
-      $Trainer.pokedex.dexList[poke.species][:seen?] = true
-      $Trainer.pokedex.dexList[poke.species][:owned?] = true
-      $Trainer.pokedex.dexList[poke.species][:formsOwned][poke.form] = true
+    if $Trainer.pokedex && !$Trainer.pokedex.nil? && $Trainer.pokedex.dexList && !$Trainer.pokedex.dexList.nil?
+      for i in 0...value.length
+        poke = value[i]
+        next if !poke
+        next if poke.isEgg?
+        $Trainer.pokedex.dexList[poke.species][:seen?] = true
+        $Trainer.pokedex.dexList[poke.species][:owned?] = true
+        $Trainer.pokedex.dexList[poke.species][:formsOwned][poke.form] = true
+      end
     end
     return true
   end
