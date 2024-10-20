@@ -142,6 +142,9 @@ If there's any I forgot about, sorry; simply ask about them.
  
 <details>
 
+v84
+* Improved ItemRadar's detection frequency.
+
 v83
 * Bugfix SharedPC: better check for the pokedex existing before trying to update it.
 
