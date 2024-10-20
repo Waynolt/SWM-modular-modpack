@@ -44,8 +44,8 @@ class Game_Screen
 		swm_updateRadar if $swm_performUpdateCheckMoreOften && deltaX == 0 && deltaY == 0
     $swm_oldDeltaX = deltaX if deltaX != 0
     $swm_oldDeltaY = deltaY if deltaY != 0
-    $swm_itemRadarMarkersLayer.ox = ($game_player.real_x/Game_Map::XSUBPIXEL)-(($game_player.x-$swm_oldDeltaX)*Game_Map::TILEWIDTH)
-    $swm_itemRadarMarkersLayer.oy = ($game_player.real_y/Game_Map::YSUBPIXEL)-(($game_player.y-$swm_oldDeltaY)*Game_Map::TILEHEIGHT)
+    $swm_itemRadarMarkersLayer.ox = ($game_map.display_x + (Graphics.width - Game_Map::TILEWIDTH) * 2) / Game_Map::XSUBPIXEL - ($game_player.x - $swm_oldDeltaX) * Game_Map::TILEWIDTH
+    $swm_itemRadarMarkersLayer.oy = ($game_map.display_y + (Graphics.height - Game_Map::TILEHEIGHT) * 2) / Game_Map::YSUBPIXEL - ($game_player.y - $swm_oldDeltaY) * Game_Map::TILEHEIGHT
     $swm_oldX = $game_player.x
     $swm_oldY = $game_player.y
 	end
