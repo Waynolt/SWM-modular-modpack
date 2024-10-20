@@ -64,7 +64,7 @@ class Game_Screen
 		end
 	end
 	
-	def swm_updateRadar
+	def swm_updateRadar(skipEventInFrontOfPlayer = false)
 		return nil if !swm_checkIsItemRadarOn?
     if !$swm_itemRadarMarkersLayerBitmap
       $swm_itemRadarMarkersLayerBitmap = AnimatedBitmap.new('patch/Mods/SWM - ItemRadar.png')
@@ -85,6 +85,7 @@ class Game_Screen
       next if $game_self_switches[[$game_map.map_id, event.id, 'B']]
       next if $game_self_switches[[$game_map.map_id, event.id, 'C']]
       next if $game_self_switches[[$game_map.map_id, event.id, 'D']]
+      next if skipEventInFrontOfPlayer && isEventInFrontOfPlayer(event)
       #Print items
       $swm_itemRadarMarkersLayer.bitmap.blt(
         offsetX+(event.x-playerX)*Game_Map::TILEWIDTH,
@@ -93,6 +94,20 @@ class Game_Screen
         $swm_itemRadarMarkersLayerBitmap.bitmap.rect
       )
     end
+	end
+	
+	def isEventInFrontOfPlayer(event)
+	  deltaX = $game_player.x - event.x
+	  deltaY = $game_player.y - event.y
+	  return false if deltaX.abs + deltaY.abs != 1
+	  dir = $game_player.direction
+    case dir
+      when 2 then return deltaX == 0 && deltaY < 0
+      when 4 then return deltaX > 0 && deltaY == 0
+      when 6 then return deltaX < 0 && deltaY == 0
+      when 8 then return deltaX == 0 && deltaY > 0
+    end
+	  return false
 	end
 	#####/MODDED
 end
@@ -105,7 +120,7 @@ class << Kernel
 
   def pbItemBall(*args, **kwargs)
     retval = swm_itemRadar_oldpbItemBall(*args, **kwargs)
-    $game_screen.swm_clearRadarScreen if $swm_performUpdateCheckMoreOften && $game_screen.swm_checkIsItemRadarOn?
+    $game_screen.swm_updateRadar(true) if $swm_performUpdateCheckMoreOften && $game_screen.swm_checkIsItemRadarOn?
     return retval
   end
   #####/MODDED
