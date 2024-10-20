@@ -162,6 +162,20 @@ class Game_Map
 	end
 end
 
+class Scene_Map
+  #####MODDED
+  if !defined?(swm_itemRadar_transfer_player)
+    alias :swm_itemRadar_transfer_player :transfer_player
+  end
+
+  def transfer_player(*args, **kwargs)
+    result = swm_itemRadar_transfer_player(*args, **kwargs)
+    $game_screen.swm_updateRadar if $swm_performUpdateCheckMoreOften
+    return result
+  end
+  #####/MODDED
+end
+
 # Pls stop using the wrong SWM version on the wrong Reborn Episode :(
 swm_target_version = '19'
 if !GAMEVERSION.start_with?(swm_target_version)
