@@ -109,7 +109,7 @@ end
 def swm_getEvsForReachingTheGlobalLimit(thispoke)
   # Redistribute by removing from the lowest ev
   if $game_switches[:No_Total_EV_Cap]
-    maxRemainingEvGlobal = SWM_EV_LIMIT_PER_STAT * thispoke.ev.length
+    maxRemainingEvGlobal = SWM_EV_LIMIT_PER_STAT * 3 * thispoke.ev.length
   else
     maxRemainingEvGlobal = SWM_EV_LIMIT_GLOBAL
   end
