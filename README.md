@@ -43,6 +43,11 @@ Every component is **stand-alone**, and can be used on its own; please refer to 
  
 <details>
 
+* "**SWM - AutoDex**": this mod automatically updates your Pokedex by marking all species and forms in an evolutionary line as seen and captured whenever you catch a new Pokemon.
+The evolutionary line of event Pokemon will be updated after the next battle.
+Notifications for added entries can be enabled by editing the "SWM - AutoDex.rb" file and setting the global variable "$swm_autoDex_showNotification" at the start to true.
+<br />
+
 * "**SWM - ChooseStarter**": while you are in the starter selection room, you can select your starter (as if you wanted to give it an item) and use the "Change starter" option to randomize or choose its species.
 <br />
 
@@ -141,6 +146,8 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
+v85
+* Added AutoDex.
 
 v84
 * Improved ItemRadar's detection frequency.
