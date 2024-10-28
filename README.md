@@ -146,8 +146,12 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
+
+v87
+* Bugfix for EvOverflow when using vitamins.
+
 v86
-* Bugfix for EvOverflow.
+* Bugfix for EvOverflow when using berries.
 
 v85
 * Added AutoDex.

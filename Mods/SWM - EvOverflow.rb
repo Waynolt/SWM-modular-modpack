@@ -50,17 +50,17 @@ end
 def swm_notifyIvChange(k, thispoke, ivgain)
   return [] if ivgain == 0
   case k
-    when 0
+    when PBStats::HP
       stat = 'Hit Points'
-    when 1
+    when PBStats::ATTACK
       stat = 'Attack'
-    when 2
+    when PBStats::DEFENSE
       stat = 'Defense'
-    when 3
+    when PBStats::SPEED
       stat = 'Speed'
-    when 4
+    when PBStats::SPATK
       stat = 'Special Attack'
-    when 5
+    when PBStats::SPDEF
       stat = 'Special Defense'
   end
   # case thispoke.gender
@@ -236,6 +236,28 @@ def useEVBerry(pokemon, scene, amount, stat)
   end
 
   return true, consumed
+end
+
+def pbRaiseEffortValues(pokemon, ev, evgain = 32, evlimit = true)
+  #####MODDED
+  # This function is used for vitamins and wings
+  # ev_points_before = pokemon.iv[ev] * SWM_EV_LIMIT_PER_STAT + pokemon.ev[ev]
+  msgs = swm_manageEvGain(evgain, ev, pokemon)
+  for i in 0...msgs.length
+    Kernel.pbMessage(msgs[i])
+  end
+  # ev_points_after = pokemon.iv[ev] * SWM_EV_LIMIT_PER_STAT + pokemon.ev[ev]
+  # return ev_points_after - ev_points_before
+  return 1 # This return value is only used to check if the EVS were increased before consuming the vitaming/wing and increasing happiness; there's no real reason to actually calculate it
+  #####/MODDED
+  #####MODDED, was totalev = pokemon.ev.sum
+  #####MODDED, was evgain = 510 - totalev if totalev + evgain > 510 && !$game_switches[:No_Total_EV_Cap]
+  #####MODDED, was evgain = 252 - pokemon.ev[ev] if pokemon.ev[ev] + evgain > 252
+  #####MODDED, was if evgain > 0
+  #####MODDED, was   pokemon.ev[ev] += evgain
+  #####MODDED, was   pokemon.calcStats
+  #####MODDED, was end
+  #####MODDED, was return evgain
 end
 
 # Pls stop using the wrong SWM version on the wrong Reborn Episode :(
