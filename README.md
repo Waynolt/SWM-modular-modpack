@@ -146,6 +146,9 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
+v86
+* Bugfix for EvOverflow.
+
 v85
 * Added AutoDex.
 

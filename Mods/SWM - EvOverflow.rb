@@ -202,22 +202,16 @@ def useEVBerry(pokemon, scene, amount, stat)
   originalev = pokemon.ev[stat]
   consumed = 0
   while consumed < amount
+    #####MODDED, was break if pokemon.happiness == 255 && pokemon.ev[stat] == 0
+    pokemon.changeHappiness("EV berry")
+    #####MODDED, was pokemon.ev[stat] -= 20
+    #####MODDED, was pokemon.ev[stat] = 0 if pokemon.ev[stat] < 0
     #####MODDED
-    if pokemon.happiness < 255
-      pokemon.changeHappiness("EV berry")
-      scene.pbDisplay(messages[2])
-    else
-      break
-    end
     msgs = swm_manageEvGain(-20, stat, pokemon)
     for i in 0...msgs.length
       scene.pbDisplay(msgs[i])
     end
     #####/MODDED
-    #####MODDED, was break if pokemon.happiness == 255 && pokemon.ev[stat] == 0
-    #####MODDED, was pokemon.changeHappiness("EV berry")
-    #####MODDED, was pokemon.ev[stat] -= 20
-    #####MODDED, was pokemon.ev[stat] = 0 if pokemon.ev[stat] < 0
     consumed += 1
   end
 
@@ -233,12 +227,12 @@ def useEVBerry(pokemon, scene, amount, stat)
     scene.pbDisplay(_INTL("{1} adores you!\nThe base {2} fell!", pokemon.name, STATSTRINGS[stat]))
   elsif pokemon.happiness == 255
     #####MODDED, was scene.pbDisplay(_INTL("{1} adores you!\nThe base {2} can't fall!", pokemon.name, STATSTRINGS[stat]))
-    scene.pbDisplay(_INTL("{1} adores you!\nThe base {2} couldn't fall without overflowing!", pokemon.name, STATSTRINGS[stat])) ######MODDED
+    scene.pbDisplay(_INTL("{1} adores you!\nThe base {2} couldn't fall without underflowing!", pokemon.name, STATSTRINGS[stat])) ######MODDED
   elsif originalev > pokemon.ev[stat]
     scene.pbDisplay(_INTL("{1} turned friendly.\nThe base {2} fell!", pokemon.name, STATSTRINGS[stat]))
   else
     #####MODDED, was scene.pbDisplay(_INTL("{1} turned friendly.\nThe base {2} can't fall!", pokemon.name, STATSTRINGS[stat]))
-    scene.pbDisplay(_INTL("{1} turned friendly.\nThe base {2} couldn't fall without overflowing!", pokemon.name, STATSTRINGS[stat])) ######MODDED
+    scene.pbDisplay(_INTL("{1} turned friendly.\nThe base {2} couldn't fall without underflowing!", pokemon.name, STATSTRINGS[stat])) ######MODDED
   end
 
   return true, consumed
