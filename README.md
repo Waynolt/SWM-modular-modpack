@@ -51,6 +51,9 @@ Notifications for added entries can be enabled by editing the "SWM - AutoDex.rb"
 * "**SWM - ChooseStarter**": while you are in the starter selection room, you can select your starter (as if you wanted to give it an item) and use the "Change starter" option to randomize or choose its species.
 <br />
 
+* "**SWM - ConsistentRandomness**": tries to keep random rolls the same every time you reload your save, providing a consistent experience. You can't reload hoping for a lucky crit that didn't happen already, but you can expect that that lucky Toxic hit will happen again if you make the same choices. Also prevents streaks in random rolls: for example, if you get a 6 on a six-sided die, you're guaranteed not to see another 6 in the next 5 rolls, helping keep outcomes balanced without changing the odds.
+<br />
+
 * "**SWM - EvOverflow**": if your mon's EV in any stat would go over 252, without breaking the 510 overall limit, then you are offered the choice to improve its IV, at the cost of resetting that EV.<br />
 If instead you use friendship berries at 0 EV you are offered the choice to reduce the IV.
 Use the password "noevcap" to disable EVs being lowered to make room for new gains when reaching the 510 overall limit.
@@ -146,6 +149,9 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
+
+v88
+* Added ConsistentRandomness.
 
 v87
 * Bugfix for EvOverflow when using vitamins.
