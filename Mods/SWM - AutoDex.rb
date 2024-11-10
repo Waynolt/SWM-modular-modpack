@@ -88,7 +88,7 @@ def swm_getNewOwned
     end
     $cache.pkmn[species].forms.each_key { |form|
       # Let it crash if a mon is not available! It needs to be reported and fixed!
-      if $Trainer.pokedex.dexList[species][:formsOwned][form] && !$swm_oldOwned[species][form]
+      if ($Trainer.pokedex.dexList[species][:owned?] || $Trainer.pokedex.dexList[species][:formsOwned][form]) && !$swm_oldOwned[species][form]
         retval.push({:species => species, :form => form})
         $swm_oldOwned[species][form] = true
       end
