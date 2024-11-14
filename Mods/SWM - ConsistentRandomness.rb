@@ -92,6 +92,17 @@ class Game_Screen
   #####/MODDED
 end
 
+class Connect
+  def main
+    Graphics.transition
+    Graphics.update
+    #####/MODDED
+    Kernel.pbMessage(_INTL('Online features are disabled when using "SWM - ConsistentRandomness" because it makes out-of-sync issues nearly unavoidable.'))
+    $scene = Scene_Map.new
+    ######/MODDED
+  end
+end
+
 # Pls stop using the wrong SWM version on the wrong Reborn Episode :(
 swm_consistentRandomness_target_version = '19'
 if !GAMEVERSION.start_with?(swm_consistentRandomness_target_version)
