@@ -43,6 +43,10 @@ Every component is **stand-alone**, and can be used on its own; please refer to 
  
 <details>
 
+* "**SWM - AgainstAdriennsAgenda**": This mod introduces a twist to any conversation where Reborn’s fairy-loving, city-polishing Adrienn comes up, replacing most instances of xyr pronouns with others chosen at random.
+Why? So that xe might know how it feels like to be mislabeled, misunderstood, and marginalized, like the innocent Poison types that were left homeless, friendless, and fieldless by Adrienn’s relentless scrubbing of Reborn’s essence.
+Is this Toxic to LGBTQ? Yes, and it does more damage with every turn!
+
 * "**SWM - AutoDex**": this mod automatically updates your Pokedex by marking all species and forms in an evolutionary line as seen and captured whenever you catch a new Pokemon.
 The evolutionary line of event Pokemon will be updated after the next battle.
 Notifications for added entries can be enabled by editing the "SWM - AutoDex.rb" file and setting the global variable "$swm_autoDex_showNotification" at the start to true.
@@ -151,6 +155,7 @@ If there's any I forgot about, sorry; simply ask about them.
 <details>
 
 v88
+* Added AgainstAdriennsAgenda.
 * Added ConsistentRandomness.
 
 v87
@@ -435,6 +440,10 @@ v23
 
  
 <details>
+
+Episode 19.16 <br />
+* Download: https://github.com/Waynolt/SWM-modular-modpack/releases/download/v78/SWM_modular_modpack_E19.zip <br />
+
 
 Episode 18 <br />
 * Download: https://drive.google.com/open?id=1iuvk4uLSRV4VEMF0Gp5wdv9d5MmlZ-ez <br />

@@ -8,7 +8,8 @@ end
 $swm_consistentRandomness_oldRandom = Random if !defined?($swm_consistentRandomness_oldRandom) # Just in case
 
 def rand(arg)
-  return $game_screen.swm_consistentRandomness_getRandomNumber(arg)
+  return $game_screen.swm_consistentRandomness_getRandomNumber(arg) if defined?($game_screen)
+  return swm_consistentRandomness_oldrand(arg)
 end
 
 class Random
@@ -26,7 +27,8 @@ class Random
   end
   
   def rand(arg)
-    return $game_screen.swm_consistentRandomness_getRandomNumber(arg)
+    return $game_screen.swm_consistentRandomness_getRandomNumber(arg) if defined?($game_screen)
+    return swm_consistentRandomness_oldrand(arg)
   end
 end
 #####/MODDED
@@ -56,10 +58,10 @@ class Game_Screen
   end
   
   def swm_consistentRandomness_getRandomNumber(arg)
-    return $game_screen.swm_consistentRandomness_getRandomNumberFromRange(0, arg) if arg.is_a?(Integer)
+    return swm_consistentRandomness_getRandomNumberFromRange(0, arg) if arg.is_a?(Integer)
     if arg.is_a?(Range)
       arg_list = arg.to_a
-      return $game_screen.swm_consistentRandomness_getRandomNumberFromRange(arg_list[0], arg_list[-1])
+      return swm_consistentRandomness_getRandomNumberFromRange(arg_list[0], arg_list[-1])
     end
     raise ArgumentError, "Unsupported argument type for rand: #{arg.class}"
   end
