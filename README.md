@@ -43,9 +43,7 @@ Every component is **stand-alone**, and can be used on its own; please refer to 
  
 <details>
 
-* "**SWM - AgainstAdriennsAgenda**": This mod introduces a twist to any conversation where Reborn’s fairy-loving, city-polishing Adrienn comes up, replacing most instances of xyr pronouns with others chosen at random.
-Why? So that xe might know how it feels like to be mislabeled, misunderstood, and marginalized, like the innocent Poison types that were left homeless, friendless, and fieldless by Adrienn’s relentless scrubbing of Reborn’s essence.
-Is this Toxic to LGBTQ? Yes, and it does more damage with every turn!
+* "**SWM - AgainstAdriennsAgenda**": # TODO
 
 * "**SWM - AutoDex**": this mod automatically updates your Pokedex by marking all species and forms in an evolutionary line as seen and captured whenever you catch a new Pokemon.
 The evolutionary line of event Pokemon will be updated after the next battle.
