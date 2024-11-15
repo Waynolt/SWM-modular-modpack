@@ -1,5 +1,54 @@
-
 #####MODDED
+Events.onStepTaken += proc {
+	swm_againstAdriennsAgenda_onStepTaken()
+}
+
+def swm_againstAdriennsAgenda_onStepTaken()
+  return if !swm_againstAdriennsAgenda_inFairyGym?
+  return if rand(7) >= 1 # It's flooded with Poison types, not filled to the top...
+  canescape = false # They're angry and the space is tight
+  encounter = swm_againstAdriennsAgenda_getEncounter()
+  EncounterModifier.trigger(encounter)
+  if $PokemonEncounters.pbCanEncounter?(encounter)
+    if $PokemonGlobal.partner || (Reborn && rand(2) < 1)
+      encounter2 = swm_againstAdriennsAgenda_getEncounter()
+      pbDoubleWildBattle(encounter[0], encounter[1], encounter2[0], encounter2[1], canescape = canescape)
+    else
+      pbWildBattle(encounter[0], encounter[1], canescape = canescape)
+    end
+  end
+  EncounterModifier.triggerEncounterEnd()
+end
+
+def swm_againstAdriennsAgenda_getEncounter
+  possible_mons = [
+    :TRUBBISH,
+    :GARBODOR,
+    :GRIMER,
+    :MUK,
+    :KOFFING,
+    :WEEZING,
+    :GULPIN,
+    :SWALOT,
+    :STUNKY,
+    :SKUNTANK,
+    :SKORUPI,
+    :DRAPION,
+    :MAREANIE,
+    :SEVIPER,
+    :TOXICROAK
+    # :QWILFISH,
+    # :NIHILEGO
+  ]
+  species = possible_mons.sample
+  level = rand(15) + 5 # They are homeless from the restored, ex low level areas
+  return [species, level]
+end
+
+def swm_againstAdriennsAgenda_inFairyGym?
+  return $game_map.map_id == 613 # 613 is Adrienn's gym
+end
+
 if defined?($swm_againstAdriennsAgenda_possibleMessages) # Ensures this will only run when resetting the game, and never on game start
   if rand(12) < 1
     $swm_againstAdriennsAgenda_possibleMessages.sample.each { |swm_againstAdriennsAgenda_msg|
