@@ -43,9 +43,6 @@ Every component is **stand-alone**, and can be used on its own; please refer to 
  
 <details>
 
-* "**SWM - AgainstAdriennsAgenda**": Adrienn has gone too far. Xyr relentless "cleansing" of Reborn’s essence has displaced countless innocent Poison types. Clearly, it’s all part of the Fairy agenda to eliminate every last trace of Poison from the city.
-This mod addresses the issue by giving these poor, displaced mons a new home - Adrienn’s gym. Now, the Fairy leader can experience firsthand what it’s like to have one's own pristine space invaded with no regard for what’s been displaced.
-
 * "**SWM - AutoDex**": this mod automatically updates your Pokedex by marking all species and forms in an evolutionary line as seen and captured whenever you catch a new Pokemon.
 The evolutionary line of event Pokemon will be updated after the next battle.
 Notifications for added entries can be enabled by editing the "SWM - AutoDex.rb" file and setting the global variable "$swm_autoDex_showNotification" at the start to true.
@@ -153,9 +150,10 @@ If there's any I forgot about, sorry; simply ask about them.
  
 <details>
 
-v88
-* Added AgainstAdriennsAgenda.
-* Added ConsistentRandomness.
+v89
+* RAWRRRR
+
+v88 was eaten by Terra.
 
 v87
 * Bugfix for EvOverflow when using vitamins.
