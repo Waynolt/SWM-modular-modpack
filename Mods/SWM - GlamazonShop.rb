@@ -329,29 +329,53 @@ class Swm_GlamazonShop_PC
   end
   
   def swm_GlamazonShop_get_DefaultMart_stock
-    case $Trainer.numbadges
-      when 0
-        stock = [:POTION, :ANTIDOTE, :POKEBALL]
-      when 1
-        stock = [:POTION, :ANTIDOTE, :PARLYZHEAL, :BURNHEAL, :ESCAPEROPE, :REPEL, :POKEBALL]
-      when 2..5
-        stock = [:SUPERPOTION, :ANTIDOTE, :PARLYZHEAL, :BURNHEAL, :ESCAPEROPE, :SUPERREPEL, :POKEBALL]
-      when 6..9
-        stock = [:SUPERPOTION, :ANTIDOTE, :PARLYZHEAL, :BURNHEAL, :ESCAPEROPE, :SUPERREPEL, :POKEBALL, :GREATBALL]
-      when 10..12
-        stock = [:POKEBALL, :GREATBALL, :ULTRABALL, :SUPERREPEL, :MAXREPEL, :ESCAPEROPE, :FULLHEAL, :HYPERPOTION]
-      when 13..16
-        stock = [:POKEBALL, :GREATBALL, :ULTRABALL, :SUPERREPEL, :MAXREPEL, :ESCAPEROPE, :FULLHEAL, :ULTRAPOTION]
-      when 17
-        stock = [:POKEBALL, :GREATBALL, :ULTRABALL, :SUPERREPEL, :MAXREPEL, :ESCAPEROPE, :FULLHEAL, :ULTRAPOTION,
-                 :MAXPOTION]
-      when 18
-        stock = [:POKEBALL, :GREATBALL, :ULTRABALL, :SUPERREPEL, :MAXREPEL, :ESCAPEROPE, :FULLHEAL, :HYPERPOTION,
-                 :ULTRAPOTION, :MAXPOTION, :FULLRESTORE, :REVIVE]
-      else
-        stock = [:POTION, :ANTIDOTE, :POKEBALL]
-    end
-    return stock
+    # case $Trainer.numbadges
+    #   when 0
+    #     stock = [:POTION, :ANTIDOTE, :POKEBALL]
+    #   when 1
+    #     stock = [:POTION, :ANTIDOTE, :PARLYZHEAL, :BURNHEAL, :ESCAPEROPE, :REPEL, :POKEBALL]
+    #   when 2..5
+    #     stock = [:SUPERPOTION, :ANTIDOTE, :PARLYZHEAL, :BURNHEAL, :ESCAPEROPE, :SUPERREPEL, :POKEBALL]
+    #   when 6..9
+    #     stock = [:SUPERPOTION, :ANTIDOTE, :PARLYZHEAL, :BURNHEAL, :ESCAPEROPE, :SUPERREPEL, :POKEBALL, :GREATBALL]
+    #   when 10..12
+    #     stock = [:POKEBALL, :GREATBALL, :ULTRABALL, :SUPERREPEL, :MAXREPEL, :ESCAPEROPE, :FULLHEAL, :HYPERPOTION]
+    #   when 13..16
+    #     stock = [:POKEBALL, :GREATBALL, :ULTRABALL, :SUPERREPEL, :MAXREPEL, :ESCAPEROPE, :FULLHEAL, :ULTRAPOTION]
+    #   when 17
+    #     stock = [:POKEBALL, :GREATBALL, :ULTRABALL, :SUPERREPEL, :MAXREPEL, :ESCAPEROPE, :FULLHEAL, :ULTRAPOTION,
+    #              :MAXPOTION]
+    #   when 18
+    #     stock = [:POKEBALL, :GREATBALL, :ULTRABALL, :SUPERREPEL, :MAXREPEL, :ESCAPEROPE, :FULLHEAL, :HYPERPOTION,
+    #              :ULTRAPOTION, :MAXPOTION, :FULLRESTORE, :REVIVE]
+    #   else
+    #     stock = [:POTION, :ANTIDOTE, :POKEBALL]
+    # end
+    # return stock
+    # Why do they stop selling antidotes? What if you want to disable TopMeUp after the 10th badge?
+    # Let's just rework it so that it includes every item from the older versions too...
+    badges = $Trainer.numbadges
+    return [
+      # Potions
+      :POTION,
+      *(badges >= 2 ? [:SUPERPOTION] : []),
+      *(badges >= 10 ? [:HYPERPOTION] : []),
+      *(badges >= 13 ? [:ULTRAPOTION] : []),
+      *(badges >= 17 ? [:MAXPOTION] : []),
+      *(badges >= 18 ? [:FULLRESTORE, :REVIVE] : []),
+      # Status heals
+      :ANTIDOTE,
+      *(badges >= 1 ? [:PARLYZHEAL, :BURNHEAL] : []),
+      *(badges >= 10 ? [:FULLHEAL] : []),
+      # Repel
+      *(badges >= 1 ? [:ESCAPEROPE, :REPEL] : []),
+      *(badges >= 2 ? [:SUPERREPEL] : []),
+      *(badges >= 10 ? [:MAXREPEL] : []),
+      # Pokeballs
+      :POKEBALL,
+      *(badges >= 6 ? [:GREATBALL] : []),
+      *(badges >= 10 ? [:ULTRABALL] : [])
+    ]
   end
   
   def swm_GlamazonShop_topMeUp_service
