@@ -59,6 +59,13 @@ If instead you use friendship berries at 0 EV you are offered the choice to redu
 Use the password "noevcap" to disable EVs being lowered to make room for new gains when reaching the 510 overall limit.
 <br />
 
+* "**SWM - GlamazonShop**": Hi, I’m Jeff Beldum, CEO of glamazon.pkm and renowned specialist in Teleporting Pokemon.<br />
+Our new branch in the Reborn region brings the world of online shopping directly to your PC!<br />
+No more backtracking to PokeMarts or running out of supplies in the middle of a Gym battle. With Glamazon Shop, you can browse and order items remotely from any store you have access to.<br />
+Tired of manually shopping for your most-used items? No problem! Our TopMeUp service ensures you never run out by automating the buying and selling process. Just set the lower and upper limits, and our team will handle the rest!<br />
+For a limited time, the service is free of charge for everyone. Sign up today, and let us Teleport your convenience to the next level!
+<br />
+
 * "**SWM - ItemRadar**" changes the ItemFinder so that, when activated, it stays on and marks hidden items on the game map.<br />
 (Alternative graphics by **Player_Null_Name**  : https://www.rebornevo.com/forums/topic/24930-swm-modular-modpack-e19/?do=findComment&comment=808102 <br />
 Alternative graphics by **Xander** : https://www.rebornevo.com/forums/topic/24930-swm-modular-modpack-e19/?do=findComment&comment=835844 <br />
@@ -149,6 +156,9 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
+
+v90
+* Added GlamazonShop.
 
 v89
 * RAWRRRR
