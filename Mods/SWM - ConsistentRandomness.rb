@@ -40,8 +40,12 @@ class Game_Screen
   #####MODDED
   attr_accessor :swm_consistentRandomness_randomNumbers
   
+  if !defined?(swm_consistentRandomness_oldinitialize)
+    alias :swm_consistentRandomness_oldinitialize :initialize # Just in case
+  end
+  
   def initialize(*args, **kwargs)
-    super(*args, **kwargs)
+    swm_consistentRandomness_oldinitialize(*args, **kwargs)
     if defined?(@swm_consistentRandomness_randomNumbers) && !@swm_consistentRandomness_randomNumbers.nil?
       swm_consistentRandomness_saveGlobalAndReturn(nil)
     else

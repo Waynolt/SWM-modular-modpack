@@ -157,6 +157,9 @@ If there's any I forgot about, sorry; simply ask about them.
  
 <details>
 
+v91
+* Bugfix for ConsistentRandomness when starting a new game.
+
 v90
 * Added GlamazonShop.
 
