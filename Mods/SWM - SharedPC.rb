@@ -3,7 +3,7 @@ $swm_loadedSharedBox = false
 
 def swm_getSharedSaveFile
   folder = RTP.getSaveFolder().gsub(/[\/\\]$/,'')+'/../Pokemon Shared PC'
-  Dir.mkdir(folder) unless (File.exists?(folder))
+  Dir.mkdir(folder) unless (File.exist?(folder))
   return "#{folder}/SharedBox.rxdata"
 end
 

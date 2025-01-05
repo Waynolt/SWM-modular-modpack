@@ -157,6 +157,9 @@ If there's any I forgot about, sorry; simply ask about them.
  
 <details>
 
+v92
+* Bugfix for SharedPC on JoiPlay.
+
 v91
 * Bugfix for ConsistentRandomness when starting a new game.
 
