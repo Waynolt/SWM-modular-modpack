@@ -2,15 +2,38 @@
 # If the method definition is included between the two tags then the method was added, else it was modified
 # Every time an alias is used, it's because the original method only needed to be extended - and not modified
 
+
 ########################################################
 ####################  Base edits  ######################
 ########################################################
+
+
+#####MODDED
+
+MOUSE_UPDATE_HOVERING = true
+
+#####/MODDED
 
 module Mouse
   #####MODDED
   module Sauiw
     # Stands for "Sledgehammering away until it works"
     # Yes, seriously.
+
+    @hover_callback_method = nil
+    @hover_callback_args = nil
+    def self.hover_callback_clear
+      Mouse::Sauiw::hover_callback_set(nil, nil)
+    end
+    def self.hover_callback_set(callback_method, callback_args = nil)
+      @hover_callback_method = callback_method
+      @hover_callback_args = callback_args
+    end
+    def self.hover_callback_call
+      return if @hover_callback_method.nil?
+      args = @hover_callback_args.nil? ? [] : @hover_callback_args
+      @hover_callback_method.call(*args)
+    end
 
     def self.handle_callbacks(button)
       # This method handles mouse clicks by setting the appropriate flag in the checking function and translating it
@@ -24,12 +47,18 @@ module Mouse
       if button == Input::C # Action
         if $game_player && $scene && $scene.is_a?(Scene_Map) && !pbIsFaded?
           # We're in a Scene_map
-          return Mouse::Sauiw::handle_movement()
+          movement = Mouse::Sauiw::handle_movement()
+          return movement if !movement.nil?
           # mouse_check_ticket_scene() # Since it's done as a map event, we're going to catch it this way # TODO test and re-enable this
         end
-        return Mouse::Sauiw::return_true_or_nil(
+        retval = Mouse::Sauiw::return_true_or_nil(
           Input.triggerex?(Input::LeftMouseKey)
         )
+        if retval
+          Mouse::Sauiw::hover_callback_call()
+          Mouse::Sauiw::hover_callback_clear()
+        end
+        return retval
       end
       if button == Input::LEFT
         return Mouse::Sauiw::return_true_or_nil(
@@ -144,7 +173,7 @@ module Mouse
   #####MODDED
   module Sauiw
     # !Input.repeatex?(Input::LeftMouseKey) skips a few frames, which kills the whole movement logic
-    # The mess with :MOVEMENT_xxx and $mouse_movement_player_xxx is due to that alone
+    # The mess with :MOVEMENT_xxx and @movement_player_xxx is due to that alone
     # It's ugly as hell, but at least it does seem to be working...
     @movement_player_last_x = nil
     @movement_player_last_y = nil
@@ -164,10 +193,10 @@ module Mouse
         @movement_player_last_y = $game_player.y
         @movement_player_last_direction = $game_player.direction
       end
-      return nil if !Input.repeatex?(Input::LeftMouseKey)
+      return false if !Input.repeatex?(Input::LeftMouseKey)
       return nil if Mouse::Sauiw::player_should_not_move?
       mouse_coordinates = Mouse::Sauiw::get_cursor_coordinates_on_screen()
-      return nil if mouse_coordinates.nil?
+      return false if mouse_coordinates.nil?
       x = mouse_coordinates[:X]
       y = mouse_coordinates[:Y]
       if x.abs < 2 && y.abs < 2
@@ -175,7 +204,7 @@ module Mouse
         return true
       end
       Mouse::Sauiw::move_player(x, y)
-      return nil
+      return false
     end
 
     def self.player_should_not_move?()
@@ -212,6 +241,8 @@ module Mouse
         player_position_on_axis = $game_player.real_y
         player_coordinate_on_axis = $game_player.y
         subpixel_size = Game_Map::YSUBPIXEL
+      else
+        raise StandardError.new "Unknown axis: #{axis}"
       end
       # First of all, let's consider the offset for when the player is moving
       offset = (player_position_on_axis / subpixel_size) - (player_coordinate_on_axis * tile_dimension)
@@ -300,6 +331,7 @@ module Input
     end
   end
   def self.dir4
+    #####MODDED
     [
       {:BTN => Input::DOWN,  :DIR => :MOVEMENT_DOWN},
       {:BTN => Input::LEFT,  :DIR => :MOVEMENT_LEFT},
@@ -308,8 +340,53 @@ module Input
     ].each do |itm|
       return itm[:BTN] if Mouse::Sauiw::check_callback(itm[:DIR])
     end
+    #####/MODDED
     return self.mouse_old_dir4()
   end
+end
+
+
+########################################################
+###############   Messages/pause menu   ################
+########################################################
+
+
+class Window_DrawableCommand < SpriteWindow_Selectable
+  if !defined?(mouse_old_update)
+    alias :mouse_old_update :update
+  end
+  def update(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover))
+    mouse_update_hover() if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_update(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover
+    pokedex_search_index = 0 # The pokedex search is kind of a special case
+    return pokedex_search_index if Mouse::Sauiw::check_callback(:POKEDEX_SEARCH_DONE)
+    return pokedex_search_index if !defined?(@commands)
+    return pokedex_search_index if @commands.length <= 0
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return pokedex_search_index if mouse_position.nil?
+    borderX_halved = borderX / 2
+    return pokedex_search_index if mouse_position[:X] <= (@x + borderX_halved)
+    return pokedex_search_index if mouse_position[:X] >= (@x + @width - borderX_halved)
+    line_first = top_row - 1
+    line_last = line_first + page_row_max + 3
+    index_new = line_first + ((mouse_position[:Y] - @y + (borderY / 2)) / rowHeight).floor
+    pokedex_search_index = index_new
+    line_first = 0 if line_first < 0
+    line_last = @commands.length-1 if line_last >= @commands.length
+    if @index != index_new && !((index_new < line_first) || (index_new > line_last))
+      @index = index_new
+      update_cursor_rect
+    end
+    return pokedex_search_index
+  end
+  #####/MODDED
 end
 
 
@@ -318,52 +395,6 @@ if false # TODO UPDATED UNTIL HERE
 ########################################################
 ####################   Hovering   ######################
 ########################################################
-
-#####################      1      ######################
-#Messages/pause menu
-
-class Window_DrawableCommand < SpriteWindow_SelectableEx
-  #####MODDED
-  def aMouseHover(bApply = true)
-    aDexSearchInd = 0 # The pokedex search is kind of a special case
-    if Mouse::Sauiw::check_and_reset_callback(:POKEDEX_SEARCH_DONE)
-      Mouse::Sauiw::set_callback(:POKEDEX_SEARCH_DONE)
-      return aDexSearchInd
-    end
-    
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return aDexSearchInd if (mouse_position.nil?) || !defined?(@commands)
-    
-    iBorderX = borderX/2
-    if (mouse_position[:X] > (@x+iBorderX)) && (mouse_position[:X] < (@x+@width-iBorderX)) && (@commands.length > 0)
-      iL0 = top_row-1
-      iL1 = iL0+page_row_max+3
-      
-      iIndex = iL0+((mouse_position[:Y]-@y+(borderY/2))/rowHeight).floor
-      
-      aDexSearchInd = iIndex
-      
-      iL0 = 0 if iL0 < 0
-      iL1 = @commands.length-1 if iL1 >= @commands.length
-      if bApply
-        if @index != iIndex && !((iIndex < iL0) || (iIndex > iL1))
-          @index = iIndex
-          update_cursor_rect
-        end
-      end
-    end
-    
-    return aDexSearchInd
-  end
-  #####/MODDED
-  
-  def update
-    oldindex=self.index
-    super
-    aMouseHover() #####MODDED
-    refresh if self.index!=oldindex
-  end
-end
 
 #####################      2      ######################
 #Pokegear
