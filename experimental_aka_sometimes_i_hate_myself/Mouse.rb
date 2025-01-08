@@ -6,11 +6,13 @@
 ########################################################
 ####################  Base edits  ######################
 ########################################################
-
+# These are the edits and changes that are common to all of the game's systems
+# Specific changes to each system will be handled in the code after this section
 
 #####MODDED
 
 MOUSE_UPDATE_HOVERING = true
+MOUSE_IGNORE_HOVER_ERRORS = false
 
 #####/MODDED
 
@@ -25,17 +27,29 @@ module Mouse
     # It exists to ensure compatibility with Joiplay, that does not have any real hovering prior to the click
     @hover_callback_method = nil
     @hover_callback_args = nil
+    @hover_callback_call_only_on_click = true
     def self.hover_callback_clear
-      Mouse::Sauiw::hover_callback_set(nil, nil)
+      Mouse::Sauiw::hover_callback_set(nil, nil, true)
     end
-    def self.hover_callback_set(callback_method, callback_args = nil)
+    def self.hover_callback_set(callback_method, callback_args = nil, call_only_on_click = true)
       @hover_callback_method = callback_method
       @hover_callback_args = callback_args
+      @hover_callback_call_only_on_click = call_only_on_click
     end
-    def self.hover_callback_call
+    def self.hover_callback_call(click_action)
+      return if @hover_callback_call_only_on_click && !click_action 
       return if @hover_callback_method.nil?
       args = @hover_callback_args.nil? ? [] : @hover_callback_args
-      @hover_callback_method.call(*args)
+      if MOUSE_IGNORE_HOVER_ERRORS
+        begin
+          @hover_callback_method.call(*args)
+        rescue
+          # Catch instances where the player used the keyboard to press "Action" instead of clicking
+          # This will hide genuine errors as a side effect!
+        end
+      else
+        @hover_callback_method.call(*args)
+      end
     end
 
     def self.handle_callbacks(button)
@@ -51,15 +65,17 @@ module Mouse
         if $game_player && $scene && $scene.is_a?(Scene_Map) && !pbIsFaded?
           # We're in a Scene_map
           movement = Mouse::Sauiw::handle_movement()
-          return movement if !movement.nil?
-          # mouse_check_ticket_scene() # Since it's done as a map event, we're going to catch it this way # TODO test and re-enable this
+          return movement || Input.triggerex?(Input::C) if !movement.nil?
+          Mouse::Sauiw::ticket_scene_handle_hover() # Since it's done as a map event, we're going to catch it this way
         end
         retval = Mouse::Sauiw::return_true_or_nil(
           Input.triggerex?(Input::LeftMouseKey)
         )
         if retval
-          Mouse::Sauiw::hover_callback_call()
+          Mouse::Sauiw::hover_callback_call(true)
           Mouse::Sauiw::hover_callback_clear()
+        else
+          Mouse::Sauiw::hover_callback_call(false)
         end
         return retval
       end
@@ -335,6 +351,7 @@ module Input
   end
   def self.dir4
     #####MODDED
+    Mouse::Sauiw::ticket_scene_update_hover() if MOUSE_UPDATE_HOVERING
     [
       {:BTN => Input::DOWN,  :DIR => :MOVEMENT_DOWN},
       {:BTN => Input::LEFT,  :DIR => :MOVEMENT_LEFT},
@@ -432,6 +449,129 @@ class Scene_Pokegear
 end
 
 
+########################################################
+###################   Start menu   #####################
+########################################################
+# Skip options and controls, they're much better to navigate with the keyboard
+# TODO figure out a way to handle the savegames selection submenu; it may not be possible without reworking pbStartLoadScreen
+
+
+if !defined?(mouse_old_pbUpdateSpriteHash)
+  alias :mouse_old_pbUpdateSpriteHash :pbUpdateSpriteHash
+end
+def pbUpdateSpriteHash(windows)
+  retval = mouse_old_pbUpdateSpriteHash(windows)
+  #####MODDED
+  mouse_pokemon_load_scene_update_hover(windows) if Mouse::Sauiw::check_and_reset_callback(:POKEMON_LOAD_SCENE_SPRITES)
+  #####/MODDED
+  return retval
+end
+
+#####MODDED
+def mouse_pokemon_load_scene_update_hover(windows)
+  $mouse_method_mouse_pokemon_load_scene_savefiles_hover.call() if !$mouse_method_mouse_pokemon_load_scene_savefiles_hover.nil?
+  mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+  return if mouse_position.nil?
+  line_sprite = windows['panel0']
+  line_start = line_sprite.x
+  return if mouse_position[:X] <= line_start
+  line_end = line_start + line_sprite.bitmap.rect.width
+  return if mouse_position[:X] >= line_end
+  command_window_sprite = windows["cmdwindow"]
+  commands_length = command_window_sprite.commands.length - 1
+  for i in 0..commands_length
+    if windows["panel#{commands_length - i}"].y < mouse_position[:Y]
+      command_window_sprite.index = commands_length - i
+      break
+    end
+  end
+end
+#####/MODDED
+
+class PokemonLoadScene
+  if !defined?(mouse_old_pbUpdate)
+    alias :mouse_old_pbUpdate :pbUpdate
+  end
+  def pbUpdate(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_pokemon_load_scene_update_hover), [@sprites])
+    Mouse::Sauiw::set_callback(:POKEMON_LOAD_SCENE_SPRITES) if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_pbUpdate(*args, **kwargs)
+  end
+end
+
+
+########################################################
+#############   Player's look selection   ##############
+########################################################
+# It is done as a map event, thus we'll catch it by trapping mouse clicks in that map
+# During its selection it is stored in $game_variables[358], values 1->6
+# Map: Map_id=51
+# Coordinates from the corner:
+# 1:  x=5 y=14
+# 2:  x=7 y=14
+# 3:  x=9 y=14
+# 4: x=11 y=14
+# 5: x=13 y=14
+# 6: x=15 y=14
+
+
+module Mouse
+  #####MODDED
+  module Sauiw
+    def self.ticket_scene_handle_hover
+      return if !Reborn
+      return if !Mouse::Sauiw::ticket_scene_is_mapid_correct?
+      Mouse::Sauiw::hover_callback_set(method(:ticket_scene_update_hover))
+    end
+  
+    def self.ticket_scene_update_hover
+      return if !Reborn 
+      return if !Mouse::Sauiw::ticket_scene_is_mapid_correct?
+      mouse_position = Mouse::Sauiw::get_cursor_coordinates_on_screen()
+      return if mouse_position.nil?
+      look = Mouse::Sauiw::ticket_scene_coordinates_to_look(
+        mouse_position[:X] + $game_player.x,
+        mouse_position[:Y] + $game_player.y
+      )
+      Mouse::Sauiw::ticket_scene_set_look(look)
+    end
+
+    def self.ticket_scene_is_mapid_correct?
+      return $game_map.map_id == 51
+    end
+
+    def self.ticket_scene_coordinates_to_look(x, y)
+      return nil if y != 14
+      case x
+        when 5
+          return 1
+        when 7
+          return 2
+        when 9
+          return 3
+        when 11
+          return 4
+        when 13
+          return 5
+        when 15
+          return 6
+      end
+      return nil
+    end
+
+    def self.ticket_scene_set_look(look)
+      return if look.nil?
+      return if $game_variables[358] == look
+      $game_variables[358] = look # "Intro Cursor"
+      $game_screen.pictures[3].show("introPlayer#{look}", 0, 0, 0, 100, 100, 255, 0)
+    end
+  end
+  #####/MODDED
+end
+
+
 if false # TODO UPDATED UNTIL HERE
   ## TODO: check weather/time selection, field notes, pulse dex, pokegear->move tutor
 
@@ -439,116 +579,6 @@ if false # TODO UPDATED UNTIL HERE
 ####################   Hovering   ######################
 ########################################################
 
-
-#####################      3      ######################
-#Start menu
-#Skip options and controls, they're much better to navigate with the keyboard
-
-class PokemonLoadScene
-  #####MODDED
-  def aMouseHover(aObjects)
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return if mouse_position.nil?
-    
-    iX0 = @sprites["panel#{0}"].x
-    iX1 = iX0+@sprites["panel#{0}"].bitmap.rect.width
-    
-    if (mouse_position[:X] > iX0) && (mouse_position[:X] < iX1)
-      iL = aObjects.commands.length-1
-      for i in 0..iL
-        if @sprites["panel#{iL-i}"].y < mouse_position[:Y]
-          aObjects.index = iL-i
-          break
-        end
-      end
-    end
-  end
-  #####/MODDED
-  
-  def pbUpdate
-    oldi=@sprites["cmdwindow"].index rescue 0
-    pbUpdateSpriteHash(@sprites)
-    aMouseHover(@sprites["cmdwindow"]) #####MODDED
-    newi=@sprites["cmdwindow"].index rescue 0
-    if oldi!=newi
-      @sprites["panel#{oldi}"].selected=false
-      @sprites["panel#{oldi}"].pbRefresh
-      @sprites["panel#{newi}"].selected=true
-      @sprites["panel#{newi}"].pbRefresh
-      while @sprites["panel#{newi}"].y>Graphics.height-16*2-23*2-1*2
-        for i in 0...@commands.length
-          @sprites["panel#{i}"].y-=23*2+1*2
-        end
-        for i in 0...6
-          break if !@sprites["party#{i}"]
-          @sprites["party#{i}"].y-=23*2+1*2
-        end
-        @sprites["player"].y-=23*2+1*2 if @sprites["player"]
-      end
-      while @sprites["panel#{newi}"].y<16*2
-        for i in 0...@commands.length
-          @sprites["panel#{i}"].y+=23*2+1*2
-        end
-        for i in 0...6
-          break if !@sprites["party#{i}"]
-          @sprites["party#{i}"].y+=23*2+1*2
-        end
-        @sprites["player"].y+=23*2+1*2 if @sprites["player"]
-      end
-    end
-  end
-end
-
-#####################      4      ######################
-#Character's look selection
-#It is done as a map event, thus we'll catch it by trapping mouse clicks in that map
-#During its selection it is stored in $game_variables[358], values 1->6
-#Map: Map_id=51
-#Coordinates:
-#1:  x=5 y=14
-#2:  x=7 y=14
-#3:  x=9 y=14
-#4: x=11 y=14
-#5: x=13 y=14
-#6: x=15 y=14
-
-def mouse_check_ticket_scene()
-  return if !Reborn
-  return if $game_map.map_id != 51 # Ticket scene
-  aPos = Mouse::Sauiw::get_cursor_position_on_screen()
-  return if aPos.nil?
-  idY = ((aPos[1]-((Graphics.height-Game_Map::TILEHEIGHT)/2))/Game_Map::TILEHEIGHT).to_i
-  iY = $game_player.y+idY
-  return if iY != 14
-  idX = ((aPos[0]-((Graphics.width-Game_Map::TILEWIDTH)/2))/Game_Map::TILEWIDTH).to_i
-  iX = $game_player.x+idX
-  case iX
-    when 5
-      iLook = 1
-      sTxt = "introPlayer1"
-    when 7
-      iLook = 2
-      sTxt = "introPlayer2"
-    when 9
-      iLook = 3
-      sTxt = "introPlayer3"
-    when 11
-      iLook = 4
-      sTxt = "introPlayer4"
-    when 13
-      iLook = 5
-      sTxt = "introPlayer5"
-    when 15
-      iLook = 6
-      sTxt = "introPlayer6"
-    else
-      return
-  end
-  if $game_variables[358] != iLook
-    $game_variables[358] = iLook
-    $game_screen.pictures[3].show(sTxt, 0, 0, 0, 100, 100, 255, 0)
-  end
-end
 
 #####################      5      ######################
 #Battle actions and moves
