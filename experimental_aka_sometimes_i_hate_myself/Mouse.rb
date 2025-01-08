@@ -20,6 +20,9 @@ module Mouse
     # Stands for "Sledgehammering away until it works"
     # Yes, seriously.
 
+    # Left clicking will call the "Action" keypress, which is appropriate only as long as the hovered option is correctly selected
+    # This system ensures that the hovering detection is being run at least once just before the "Action" keypress
+    # It exists to ensure compatibility with Joiplay, that does not have any real hovering prior to the click
     @hover_callback_method = nil
     @hover_callback_args = nil
     def self.hover_callback_clear
@@ -390,50 +393,52 @@ class Window_DrawableCommand < SpriteWindow_Selectable
 end
 
 
+########################################################
+####################   Pokegear   ######################
+########################################################
+
+
+class Scene_Pokegear
+  if !defined?(mouse_old_update)
+    alias :mouse_old_update :update
+  end
+  def update(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover))
+    mouse_update_hover() if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_update(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover()
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    line_sprite = @sprites['button0']
+    line_start = line_sprite.x
+    return if mouse_position[:X] <= line_start
+    line_end = line_start + line_sprite.bitmap.rect.width
+    return if mouse_position[:X] >= line_end
+    command_window_sprite = @sprites["command_window"]
+    commands_length = command_window_sprite.commands.length - 1
+    for i in 0..commands_length
+      if @sprites["button#{commands_length - i}"].y < mouse_position[:Y]
+        command_window_sprite.index = commands_length - i
+        break
+      end
+    end
+  end
+  #####/MODDED
+end
+
+
 if false # TODO UPDATED UNTIL HERE
+  ## TODO: check weather/time selection, field notes, pulse dex, pokegear->move tutor
 
 ########################################################
 ####################   Hovering   ######################
 ########################################################
 
-#####################      2      ######################
-#Pokegear
-
-class Scene_Pokegear
-  #####MODDED
-  def aMouseHover(aObjects)
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return if mouse_position.nil?
-    
-    iX0 = @sprites["button#{0}"].x
-    iX1 = iX0+@sprites["button#{0}"].bitmap.rect.width
-    
-    if (mouse_position[:X] > iX0) && (mouse_position[:X] < iX1)
-      iL = aObjects.commands.length-1
-      for i in 0..iL
-        if @sprites["button#{iL-i}"].y < mouse_position[:Y]
-          aObjects.index = iL-i
-          break
-        end
-      end
-    end
-  end
-  #####/MODDED
-  
-  def update
-    aMouseHover(@sprites["command_window"]) #####MODDED
-    for i in 0...@sprites["command_window"].commands.length
-      sprite=@sprites["button#{i}"]
-      sprite.selected=(i==@sprites["command_window"].index) ? true : false
-    end
-    pbUpdateSpriteHash(@sprites)
-    #update command window and the info if it's active
-    if @sprites["command_window"].active
-      update_command
-      return
-    end
-  end
-end
 
 #####################      3      ######################
 #Start menu
