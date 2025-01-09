@@ -1,6 +1,7 @@
 # Everything that is either tagged "MODDED" or between a "MODDED" and a "/MODDED" was added or changed compared to the original codebase
 # If the method definition is included between the two tags then the method was added, else it was modified
 # Every time an alias is used, it's because the original method only needed to be extended - and not modified
+# When instead the tag MODDED_OBLIGATORY is used, it means that I was unable to find a way to implement mouse tracking without editing the original method
 
 
 ########################################################
@@ -8,6 +9,7 @@
 ########################################################
 # These are the edits and changes that are common to all of the game's systems
 # Specific changes to each system will be handled in the code after this section
+
 
 #####MODDED
 
@@ -37,7 +39,7 @@ module Mouse
       @hover_callback_call_only_on_click = call_only_on_click
     end
     def self.hover_callback_call(click_action)
-      return if @hover_callback_call_only_on_click && !click_action 
+      return if @hover_callback_call_only_on_click && !click_action
       return if @hover_callback_method.nil?
       args = @hover_callback_args.nil? ? [] : @hover_callback_args
       if MOUSE_IGNORE_HOVER_ERRORS
@@ -74,6 +76,7 @@ module Mouse
         if retval
           Mouse::Sauiw::hover_callback_call(true)
           Mouse::Sauiw::hover_callback_clear()
+          return nil if Mouse::Sauiw::check_and_reset_callback(:INTERCEPT_CLICK) # :INTERCEPT_CLICK prevents the click from being interpreted as an activation
         else
           Mouse::Sauiw::hover_callback_call(false)
         end
@@ -370,44 +373,65 @@ end
 ###############   Messages/pause menu   ################
 ########################################################
 
+# TODO this interferes with EVERYTHING! With almost every single other hover_callback_set!
+#    Also, Messages like "Pokemon wants to learn MOVE" ignore the mouse in battle because of a similar conflict...
+# class Window_DrawableCommand < SpriteWindow_Selectable # TODO this is the parent class, but even using Window_CommandPokemon instead conflicts just as well...
+# class Window_CommandPokemon < Window_DrawableCommand
+#   if !defined?(mouse_old_update)
+#     alias :mouse_old_update :update
+#   end
+#   def update(*args, **kwargs)
+#     #####MODDED
+#     Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover))
+#     mouse_update_hover() if MOUSE_UPDATE_HOVERING
+#     #####/MODDED
+#     return mouse_old_update(*args, **kwargs)
+#   end
 
-class Window_DrawableCommand < SpriteWindow_Selectable
-  if !defined?(mouse_old_update)
-    alias :mouse_old_update :update
-  end
-  def update(*args, **kwargs)
-    #####MODDED
-    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover))
-    mouse_update_hover() if MOUSE_UPDATE_HOVERING
-    #####/MODDED
-    return mouse_old_update(*args, **kwargs)
-  end
+#   #####MODDED
+#   def mouse_update_hover
+#     return if @commands.length <= 0
+#     mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+#     return if mouse_position.nil?
+#     borderX_halved = borderX / 2
+#     return if mouse_position[:X] <= (@x + borderX_halved)
+#     return if mouse_position[:X] >= (@x + @width - borderX_halved)
+#     line_first = top_row - 1
+#     line_last = line_first + page_row_max + 3
+#     index_new = line_first + ((mouse_position[:Y] - @y + (borderY / 2)) / rowHeight).floor
+#     line_first = 0 if line_first < 0
+#     line_last = @commands.length-1 if line_last >= @commands.length
+#     if @index != index_new && !((index_new < line_first) || (index_new > line_last))
+#       @index = index_new
+#       update_cursor_rect
+#     end
+#   end
 
-  #####MODDED
-  def mouse_update_hover
-    pokedex_search_index = 0 # The pokedex search is kind of a special case
-    return pokedex_search_index if Mouse::Sauiw::check_callback(:POKEDEX_SEARCH_DONE)
-    return pokedex_search_index if !defined?(@commands)
-    return pokedex_search_index if @commands.length <= 0
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return pokedex_search_index if mouse_position.nil?
-    borderX_halved = borderX / 2
-    return pokedex_search_index if mouse_position[:X] <= (@x + borderX_halved)
-    return pokedex_search_index if mouse_position[:X] >= (@x + @width - borderX_halved)
-    line_first = top_row - 1
-    line_last = line_first + page_row_max + 3
-    index_new = line_first + ((mouse_position[:Y] - @y + (borderY / 2)) / rowHeight).floor
-    pokedex_search_index = index_new
-    line_first = 0 if line_first < 0
-    line_last = @commands.length-1 if line_last >= @commands.length
-    if @index != index_new && !((index_new < line_first) || (index_new > line_last))
-      @index = index_new
-      update_cursor_rect
-    end
-    return pokedex_search_index
-  end
-  #####/MODDED
-end
+#   # TODO remove this after updating the pokedex (class Window_Pokedex < Window_DrawableCommand ?)
+#   # def mouse_update_hover
+#   #   pokedex_search_index = 0 # The pokedex search is kind of a special case
+#   #   return pokedex_search_index if Mouse::Sauiw::check_callback(:POKEDEX_SEARCH_DONE)
+#   #   return pokedex_search_index if !defined?(@commands)
+#   #   return pokedex_search_index if @commands.length <= 0
+#   #   mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+#   #   return pokedex_search_index if mouse_position.nil?
+#   #   borderX_halved = borderX / 2
+#   #   return pokedex_search_index if mouse_position[:X] <= (@x + borderX_halved)
+#   #   return pokedex_search_index if mouse_position[:X] >= (@x + @width - borderX_halved)
+#   #   line_first = top_row - 1
+#   #   line_last = line_first + page_row_max + 3
+#   #   index_new = line_first + ((mouse_position[:Y] - @y + (borderY / 2)) / rowHeight).floor
+#   #   pokedex_search_index = index_new
+#   #   line_first = 0 if line_first < 0
+#   #   line_last = @commands.length-1 if line_last >= @commands.length
+#   #   if @index != index_new && !((index_new < line_first) || (index_new > line_last))
+#   #     @index = index_new
+#   #     update_cursor_rect
+#   #   end
+#   #   return pokedex_search_index
+#   # end
+#   #####/MODDED
+# end
 
 
 ########################################################
@@ -515,6 +539,7 @@ end
 # 4: x=11 y=14
 # 5: x=13 y=14
 # 6: x=15 y=14
+# TODO the hovered sprite does not animate
 
 
 module Mouse
@@ -572,6 +597,227 @@ module Mouse
 end
 
 
+########################################################
+############   Battle actions and moves   ##############
+########################################################
+
+
+class PokeBattle_Scene
+  if !defined?(mouse_old_pbFrameUpdate)
+    alias :mouse_old_pbFrameUpdate :pbFrameUpdate
+  end
+  def pbFrameUpdate(cw, update_cw = true)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover), [cw, update_cw, true]) if update_cw
+    mouse_update_hover(cw, update_cw, false) if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_pbFrameUpdate(cw, update_cw = true)
+  end
+
+  #####MODDED
+  def mouse_update_hover(cw, update_cw, action_triggered)
+    return if !cw
+    # return if !update_cw
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    is_fight_menu = defined?(cw.setIndex)
+    if is_fight_menu
+      #Coordinates copied from class FightMenuButtons
+      x_start = 4
+      y_start = Graphics.height-90 # FightMenuButtons::UPPERGAP is re-added right after, thus there's no point in removing it here
+      x_end = x_start+384
+      y_end = y_start+94
+      x_mid = x_start+192
+      y_mid = y_start+47
+    else
+      #Coordinates copied from class CommandMenuButtons
+      x_start = Graphics.width-260
+      y_start = Graphics.height-96
+      x_end = x_start+256
+      y_end = y_start+94
+      x_mid = x_start+128
+      y_mid = y_start+47
+    end
+    if (mouse_position[:X] > x_start) && (mouse_position[:X] < x_end) && (mouse_position[:Y] > y_start) && (mouse_position[:Y] < y_end)
+      index = mouse_position[:X] < x_mid ? 0 : 1
+      index += 2 if mouse_position[:Y] > y_mid
+      if is_fight_menu
+        cw.setIndex(index)
+      else
+        cw.index = index
+      end
+      return
+    end
+    return if !is_fight_menu
+    return if !action_triggered
+    return if mouse_position[:X] <= 148
+    return if mouse_position[:X] >= 242
+    return if mouse_position[:Y] <= 251
+    return if mouse_position[:Y] >= 288
+    play_sound = false
+    player_index = 0
+    if cw.megaButton == 1
+      play_sound = true
+      tts("Mega Evolution activated")
+      @battle.pbRegisterMegaEvolution(player_index)
+      cw.megaButton = 2
+    elsif cw.megaButton == 2
+      play_sound = true
+      tts("Mega Evolution deactivated")
+      @battle.pbUnRegisterMegaEvolution(player_index)
+      cw.megaButton = 1
+    end
+    if cw.ultraButton == 1
+      play_sound = true
+      tts("Ultra Burst activated")
+      @battle.pbRegisterUltraBurst(player_index)
+      cw.ultraButton = 2
+    elsif cw.ultraButton == 2
+      play_sound = true
+      tts("Ultra Burst deactivated")
+      @battle.pbUnRegisterUltraBurst(player_index)
+      cw.ultraButton = 1
+    end
+    if cw.zButton == 1
+      play_sound = true
+      tts("Z-Moves activated")
+      @battle.pbRegisterZMove(player_index)
+      cw.zButton = 2
+    elsif cw.zButton == 2
+      play_sound = true
+      tts("Z-Moves deactivated")
+      @battle.pbUnRegisterZMove(player_index)
+      cw.zButton = 1
+    end
+    if play_sound
+      Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
+      pbPlayDecisionSE()
+    end
+  end
+  
+  def mouse_update_hover_target(index)
+    return index if index < 0
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return index if mouse_position.nil?
+    return index if mouse_position[:X] < 0
+    num_sections = @battle.doublebattle ? 4 : 2
+    selection = (num_sections * mouse_position[:X] / Graphics.width).floor
+    selection = [num_sections - 1, selection].min # Handles the edge case where mouse_position == Graphics.width
+    return selection if !@battle.doublebattle
+    # In doubles, the section % does not match the battler index
+    case selection
+      when 0
+        return 0
+      when 1
+        return 2
+      when 2
+        return 3
+      when 3
+        return 1
+    end
+    raise StandardError.new "Unexpected selection: #{selection}"
+  end
+  #####/MODDED
+
+  def pbChooseTarget(index)
+    pbShowWindow(FIGHTBOX)
+    curwindow = pbFirstTarget(index)
+    if curwindow == -1
+      raise RuntimeError.new(_INTL("No targets somehow..."))
+    end
+    tts(@battle.battlers[curwindow].name, true) if !@battle.battlers[curwindow].isFainted?
+
+    loop do
+      pbGraphicsUpdate
+      Input.update
+      curwindow = mouse_update_hover_target(curwindow) if MOUSE_UPDATE_HOVERING #####MODDED_OBLIGATORY
+      pbUpdateSelected(curwindow)
+      if Input.trigger?(Input::C)
+        pbUpdateSelected(-1)
+        return mouse_update_hover_target(curwindow) #####MODDED_OBLIGATORY
+        return curwindow
+      end
+      if Input.trigger?(Input::B)
+        pbUpdateSelected(-1)
+        return -1
+      end
+      if curwindow >= 0
+        if Input.trigger?(Input::RIGHT) || Input.trigger?(Input::DOWN)
+          loop do
+            newcurwindow = 3 if curwindow == 0
+            newcurwindow = 1 if curwindow == 3
+            newcurwindow = 2 if curwindow == 1
+            newcurwindow = 0 if curwindow == 2
+            curwindow = newcurwindow
+            next if curwindow == index
+            break if !@battle.battlers[curwindow].isFainted?
+          end
+          tts(@battle.battlers[curwindow].name, true) if !@battle.battlers[curwindow].isFainted?
+        elsif Input.trigger?(Input::LEFT) || Input.trigger?(Input::UP)
+          loop do
+            newcurwindow = 2 if curwindow == 0
+            newcurwindow = 1 if curwindow == 2
+            newcurwindow = 3 if curwindow == 1
+            newcurwindow = 0 if curwindow == 3
+            curwindow = newcurwindow
+            next if curwindow == index
+            break if !@battle.battlers[curwindow].isFainted?
+          end
+          tts(@battle.battlers[curwindow].name, true) if !@battle.battlers[curwindow].isFainted?
+        end
+      end
+    end
+  end
+
+  def pbChooseTargetOneSide(index, target)
+    pbShowWindow(FIGHTBOX)
+    curwindow = target == :SingleOpposing ? pbFirstTarget(index) : pbAcupressureTarget(index)
+    if curwindow == -1
+      raise RuntimeError.new(_INTL("No targets somehow..."))
+    end
+
+    loop do
+      pbGraphicsUpdate
+      Input.update
+      curwindow = mouse_update_hover_target(curwindow) if MOUSE_UPDATE_HOVERING #####MODDED_OBLIGATORY
+      pbUpdateSelected(curwindow)
+      if Input.trigger?(Input::C)
+        pbUpdateSelected(-1)
+        return mouse_update_hover_target(curwindow) #####MODDED_OBLIGATORY
+        return curwindow
+      end
+      if Input.trigger?(Input::B)
+        pbUpdateSelected(-1)
+        return -1
+      end
+      if curwindow >= 0
+        if Input.trigger?(Input::RIGHT) || Input.trigger?(Input::DOWN)
+          loop do
+            newcurwindow = 2 if curwindow == 0
+            newcurwindow = 1 if curwindow == 3
+            newcurwindow = 3 if curwindow == 1
+            newcurwindow = 0 if curwindow == 2
+            curwindow = newcurwindow
+            break if !@battle.battlers[curwindow].isFainted?
+          end
+          tts(@battle.battlers[curwindow].name) if !@battle.battlers[curwindow].isFainted?
+        elsif Input.trigger?(Input::LEFT) || Input.trigger?(Input::UP)
+          loop do
+            newcurwindow = 2 if curwindow == 0
+            newcurwindow = 0 if curwindow == 2
+            newcurwindow = 3 if curwindow == 1
+            newcurwindow = 1 if curwindow == 3
+            curwindow = newcurwindow
+            break if !@battle.battlers[curwindow].isFainted?
+          end
+          tts(@battle.battlers[curwindow].name) if !@battle.battlers[curwindow].isFainted?
+        end
+      end
+    end
+  end
+end
+
+
 if false # TODO UPDATED UNTIL HERE
   ## TODO: check weather/time selection, field notes, pulse dex, pokegear->move tutor
 
@@ -579,257 +825,6 @@ if false # TODO UPDATED UNTIL HERE
 ####################   Hovering   ######################
 ########################################################
 
-
-#####################      5      ######################
-#Battle actions and moves
-
-class PokeBattle_Scene
-  #####MODDED
-  def aMouseHover(aObjects)
-    $aTargetCell[2] = 0 if defined?($aTargetCell) #Let battles cancel the mouse movement
-    
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return if mouse_position.nil?
-    
-    if defined?(aObjects.setIndex)
-      #Coordinates copied from class FightMenuButtons
-      iX0 = 4
-      iY0 = Graphics.height-90 #FightMenuButtons::UPPERGAP is re-added right after, thus there's no point in removing it here
-      iX1 = iX0+384
-      iY1 = iY0+94
-      iXh = iX0+192
-      iYh = iY0+47
-      bIsFightMenu = true
-    else
-      #Coordinates copied from class CommandMenuButtons
-      iX0 = Graphics.width-260
-      iY0 = Graphics.height-96
-      iX1 = iX0+256
-      iY1 = iY0+94
-      iXh = iX0+128
-      iYh = iY0+47
-      bIsFightMenu = false
-    end
-    
-    if (mouse_position[:X] > iX0) && (mouse_position[:X] < iX1) && (mouse_position[:Y] > iY0) && (mouse_position[:Y] < iY1)
-      if mouse_position[:X] < iXh
-        iIndex = 0
-      else
-        iIndex = 1
-      end
-      if mouse_position[:Y] > iYh
-        iIndex = iIndex+2
-      end
-      if bIsFightMenu
-        aObjects.setIndex(iIndex)
-      else
-        aObjects.index = iIndex
-      end
-    else
-      if bIsFightMenu
-        if Input.triggerex?(Input::LeftMouseKey)
-          if (mouse_position[:X] > 148) && (mouse_position[:X] < 242) && (mouse_position[:Y] > 251) && (mouse_position[:Y] < 288)
-            bPlaySound = false
-            iPlayerIndex = 0
-            
-            if aObjects.megaButton == 1
-              @battle.pbRegisterMegaEvolution(iPlayerIndex)
-              aObjects.megaButton = 2
-              Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-              bPlaySound = true
-            elsif aObjects.megaButton == 2
-              aObjects.megaButton = 1
-              Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-              bPlaySound = true
-              
-              #Unregister mega evolution
-              side=(@battle.pbIsOpposing?(iPlayerIndex)) ? 1 : 0
-              owner=@battle.pbGetOwnerIndex(iPlayerIndex)
-              side=(pbIsOpposing?(index)) ? 1 : 0
-              @battle.megaEvolution[side][owner] = -1
-            end
-            if aObjects.ultraButton == 1
-              @battle.pbRegisterUltraBurst(iPlayerIndex)
-              aObjects.ultraButton = 2
-              Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-              bPlaySound = true
-            elsif aObjects.ultraButton == 2
-              aObjects.ultraButton = 1
-              Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-              bPlaySound = true
-              
-              #Unregister ultra burst
-              side=(@battle.pbIsOpposing?(iPlayerIndex)) ? 1 : 0
-              owner=@battle.pbGetOwnerIndex(iPlayerIndex)
-              @battle.ultraBurst[side][owner] = -1
-            end
-            if aObjects.zButton == 1
-              @battle.pbRegisterZMove(iPlayerIndex)
-              aObjects.zButton = 2
-              Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-              bPlaySound = true
-            elsif aObjects.zButton == 2
-              aObjects.zButton = 1
-              Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-              bPlaySound = true
-              
-              #Unregister Z move
-              side=(@battle.pbIsOpposing?(iPlayerIndex)) ? 1 : 0
-              owner=@battle.pbGetOwnerIndex(iPlayerIndex)
-              @battle.zMove[side][owner] = -1
-            end
-            
-            pbPlayDecisionSE() if bPlaySound
-          end
-        end
-      end
-    end
-  end
-  
-  def aMouseHoverTarget(index)
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return index if mouse_position.nil?
-    
-    iRetVal = index
-    
-    iPart = Graphics.width/4
-    
-    if mouse_position[:X] > 0
-      iX = 0
-      for i in 0...4
-        if mouse_position[:X] > iX
-          iSel = i
-        end
-        iX = iX+iPart
-      end
-    
-      if @battle.doublebattle
-        case iSel
-          when 0
-            iSel2 = 0
-          when 1
-            iSel2 = 2
-          when 2
-            iSel2 = 3
-          when 3
-            iSel2 = 1
-        end
-      else
-        if iSel > 1
-          iSel2 = 1
-        else
-          iSel2 = 0
-        end
-      end
-      
-      iRetVal = iSel2 if !@battle.battlers[iSel2].isFainted?
-    end
-    
-    return iRetVal
-  end
-  #####/MODDED
-  
-  def pbFrameUpdate(cw)
-    cw.update if cw
-    aMouseHover(cw) if cw #####MODDED
-    for i in 0...4
-      if @sprites["battlebox#{i}"]
-        @sprites["battlebox#{i}"].update
-      end
-      if @sprites["pokemon#{i}"]
-        @sprites["pokemon#{i}"].update
-      end
-    end
-  end
-  
-  def pbChooseTarget(index)
-    pbShowWindow(FIGHTBOX)
-    curwindow=pbFirstTarget(index)
-    if curwindow==-1
-      raise RuntimeError.new(_INTL("No targets somehow..."))
-    end
-    loop do
-      pbGraphicsUpdate
-      pbInputUpdate
-      curwindow = aMouseHoverTarget(curwindow) #####MODDED
-      pbUpdateSelected(curwindow)
-      if Input.trigger?(Input::C)
-        pbUpdateSelected(-1)
-        return curwindow
-      end
-      if Input.trigger?(Input::B)
-        pbUpdateSelected(-1)
-        return -1
-      end
-      if curwindow>=0
-        if Input.trigger?(Input::RIGHT) || Input.trigger?(Input::DOWN)
-          loop do
-            newcurwindow=3 if curwindow==0
-            newcurwindow=1 if curwindow==3
-            newcurwindow=2 if curwindow==1
-            newcurwindow=0 if curwindow==2
-            curwindow=newcurwindow
-            next if curwindow==index
-            break if !@battle.battlers[curwindow].isFainted?
-          end
-        elsif Input.trigger?(Input::LEFT) || Input.trigger?(Input::UP)
-          loop do 
-            newcurwindow=2 if curwindow==0
-            newcurwindow=1 if curwindow==2
-            newcurwindow=3 if curwindow==1
-            newcurwindow=0 if curwindow==3
-            curwindow=newcurwindow
-            next if curwindow==index
-            break if !@battle.battlers[curwindow].isFainted?
-          end
-        end
-      end
-    end
-  end
-
-  def pbChooseTargetAcupressure(index)
-    pbShowWindow(FIGHTBOX)
-    curwindow=pbAcupressureTarget(index)
-    if curwindow==-1
-      raise RuntimeError.new(_INTL("No targets somehow..."))
-    end
-    loop do
-      pbGraphicsUpdate
-      pbInputUpdate
-      curwindow = aMouseHoverTarget(curwindow) #####MODDED
-      pbUpdateSelected(curwindow)
-      if Input.trigger?(Input::C)
-        pbUpdateSelected(-1)
-        return curwindow
-      end
-      if Input.trigger?(Input::B)
-        pbUpdateSelected(-1)
-        return -1
-      end
-      if curwindow>=0
-        if Input.trigger?(Input::RIGHT) || Input.trigger?(Input::DOWN)
-          loop do
-            newcurwindow=2 if curwindow==0
-            newcurwindow=1 if curwindow==3
-            newcurwindow=3 if curwindow==1
-            newcurwindow=0 if curwindow==2
-            curwindow=newcurwindow
-            break if !@battle.battlers[curwindow].isFainted?
-          end
-        elsif Input.trigger?(Input::LEFT) || Input.trigger?(Input::UP)
-          loop do 
-            newcurwindow=2 if curwindow==0
-            newcurwindow=0 if curwindow==2
-            newcurwindow=3 if curwindow==1
-            newcurwindow=1 if curwindow==3
-            curwindow=newcurwindow
-            break if !@battle.battlers[curwindow].isFainted?
-          end
-        end
-      end
-    end
-  end
-end
 
 #####################      6      ######################
 #Bag (in and out of battle)
