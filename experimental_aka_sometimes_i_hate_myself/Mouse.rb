@@ -373,8 +373,147 @@ end
 ###############   Messages/pause menu   ################
 ########################################################
 
+
+class Window_DrawableCommand < SpriteWindow_Selectable
+  #####MODDED
+  def mouse_update_hover
+    pokedex_search_index = 0 # The pokedex search is kind of a special case
+    return pokedex_search_index if Mouse::Sauiw::check_callback(:POKEDEX_SEARCH_DONE)
+    return pokedex_search_index if !defined?(@commands)
+    return pokedex_search_index if @commands.length <= 0
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return pokedex_search_index if mouse_position.nil?
+    borderX_halved = borderX / 2
+    return pokedex_search_index if mouse_position[:X] <= (@x + borderX_halved)
+    return pokedex_search_index if mouse_position[:X] >= (@x + @width - borderX_halved)
+    line_first = top_row - 1
+    line_last = line_first + page_row_max + 3
+    index_new = line_first + ((mouse_position[:Y] - @y + (borderY / 2)) / rowHeight).floor
+    pokedex_search_index = index_new
+    line_first = 0 if line_first < 0
+    line_last = @commands.length-1 if line_last >= @commands.length
+    if @index != index_new && !((index_new < line_first) || (index_new > line_last))
+      @index = index_new
+      update_cursor_rect
+    end
+    return pokedex_search_index
+  end
+  #####/MODDED
+end
+
+class PokemonMenu_Scene
+  #####MODDED
+  def mouse_update_hover
+    @sprites["cmdwindow"].mouse_update_hover() if !@sprites["cmdwindow"].nil?
+  end
+  #####/MODDED
+
+  def pbShowCommands(commands)
+    ret = -1
+    cmdwindow = @sprites["cmdwindow"]
+    cmdwindow.viewport = @viewport
+    cmdwindow.index = $PokemonTemp.menuLastChoice
+    cmdwindow.resizeToFit(commands)
+    cmdwindow.commands = commands
+    cmdwindow.x = Graphics.width - cmdwindow.width
+    cmdwindow.y = 0
+    cmdwindow.visible = true
+    lastread = nil
+    loop do
+      Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover)) #####MODDED_OBLIGATORY
+      mouse_update_hover() if MOUSE_UPDATE_HOVERING #####MODDED_OBLIGATORY
+      cmdwindow.update
+      if commands[cmdwindow.index] != lastread
+        tts(commands[cmdwindow.index])
+        lastread = commands[cmdwindow.index]
+      end
+      Graphics.update
+      Input.update
+      pbUpdateSceneMap
+      if Input.trigger?(Input::B)
+        ret = -1
+        break
+      end
+      if Input.trigger?(Input::C)
+        ret = cmdwindow.index
+        $PokemonTemp.menuLastChoice = ret
+        break
+      end
+    end
+    return ret
+  end
+end
+
+class PokeBattle_Scene
+  #####MODDED
+  def mouse_update_hover_msg(cw)
+    cw.mouse_update_hover() if !cw.nil?
+  end
+  #####/MODDED
+
+  def pbShowCommands(msg, commands, defaultValue)
+    pbWaitMessage
+    pbRefresh
+    tts(msg)
+    pbShowWindow(MESSAGEBOX)
+    dw = @sprites["messagewindow"]
+    dw.text = msg
+    cw = Window_CommandPokemon.new(commands, tts: false)
+    cw.x = Graphics.width - cw.width
+    cw.y = Graphics.height - cw.height - dw.height
+    cw.index = 0
+    cw.viewport = @viewport
+    pbRefresh
+    update_menu = true
+    lastread = nil
+    loop do
+      cw.visible = !dw.busy?
+      pbGraphicsUpdate
+      Input.update
+      Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover_msg), [cw]) #####MODDED_OBLIGATORY
+      mouse_update_hover_msg(cw) if MOUSE_UPDATE_HOVERING #####MODDED_OBLIGATORY
+      pbFrameUpdate(cw, update_menu, true) #####MODDED_OBLIGATORY, was pbFrameUpdate(cw, update_menu)
+      update_menu = false
+      dw.update
+      tts(commands[cw.index]) if commands[cw.index] != lastread
+      lastread = commands[cw.index]
+      if Input.trigger?(Input::B) && defaultValue >= 0
+        update_menu = true
+        if dw.busy?
+          pbPlayDecisionSE() if dw.pausing?
+          dw.resume
+        else
+          cw.dispose
+          dw.text = ""
+          return defaultValue
+        end
+      end
+      if Input.trigger?(Input::C)
+        update_menu = true
+        if dw.busy?
+          pbPlayDecisionSE() if dw.pausing?
+          dw.resume
+        else
+          cw.dispose
+          dw.text = ""
+          return cw.index
+        end
+      end
+      if Input.trigger?(Input::DOWN)
+        update_menu = true
+        cw.index = (cw.index + 1) % commands.length
+      end
+      if Input.trigger?(Input::UP)
+        update_menu = true
+        cw.index = (cw.index - 1) % commands.length
+      end
+    end
+  end
+end
+
 # TODO this interferes with EVERYTHING! With almost every single other hover_callback_set!
 #    Also, Messages like "Pokemon wants to learn MOVE" ignore the mouse in battle because of a similar conflict...
+#    The code before this attempts to avoid the issue
 # class Window_DrawableCommand < SpriteWindow_Selectable # TODO this is the parent class, but even using Window_CommandPokemon instead conflicts just as well...
 # class Window_CommandPokemon < Window_DrawableCommand
 #   if !defined?(mouse_old_update)
@@ -606,10 +745,12 @@ class PokeBattle_Scene
   if !defined?(mouse_old_pbFrameUpdate)
     alias :mouse_old_pbFrameUpdate :pbFrameUpdate
   end
-  def pbFrameUpdate(cw, update_cw = true)
+  def pbFrameUpdate(cw, update_cw = true, ignore_mouse_hover = false)
     #####MODDED
-    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover), [cw, update_cw, true]) if update_cw
-    mouse_update_hover(cw, update_cw, false) if MOUSE_UPDATE_HOVERING
+    if !ignore_mouse_hover
+      Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover), [cw, update_cw, true]) if update_cw
+      mouse_update_hover(cw, update_cw, false) if MOUSE_UPDATE_HOVERING
+    end
     #####/MODDED
     return mouse_old_pbFrameUpdate(cw, update_cw = true)
   end
