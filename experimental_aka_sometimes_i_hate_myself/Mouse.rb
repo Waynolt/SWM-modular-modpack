@@ -24,6 +24,52 @@ module Mouse
     # Stands for "Sledgehammering away until it works"
     # Yes, seriously.
 
+    @is_left_clicking_now = false
+    @is_right_clicking_now = false
+    @was_left_clicking_before = false
+    @was_right_clicking_before = false
+    def self.update
+      @was_left_clicking_before = @is_left_clicking_now
+      @was_right_clicking_before = @is_right_clicking_now
+      @is_left_clicking_now = self.detect_real_mouse_click(Input::LeftMouseKey)
+      @is_right_clicking_now = self.detect_real_mouse_click(Input::RightMouseKey)
+      swm_logLine("update #{@was_left_clicking_before} - #{@is_left_clicking_now}") # TODO
+    end
+    def self.detect_real_mouse_click(mouse_key)
+      if !$joiplay || mouse_key == Input::RightMouseKey
+        # return true if Input.trigger?(mouse_key) # Was aliased by this mod; normally returns true when the mouse button is first being pressed
+        # return true if Input.triggerex?(mouse_key) # Returns true when the mouse button is first being pressed
+        # return true if Input.mouse_old_input_trigger?(mouse_key) # Returns true when the mouse button is first being pressed
+        # return true if Input.repeat?(mouse_key) # Returns true once every X frames as long as the mouse button is being held down
+        # return true if Input.repeatex?(mouse_key) # Returns true once every X frames as long as the mouse button is being held down
+        # return true if Input.press?(mouse_key) # Was aliased by this mod; normally it returns true if the mouse button is currently being held down
+        return true if Input.pressex?(mouse_key) # Returns true if the mouse button is currently being held down
+        # return true if Input.mouse_old_input_press?(mouse_key) # Returns true if the mouse button is currently being held down
+        return false
+      end
+      return true if !Mouse.getMousePos(false).nil?
+      return false
+    end
+    def self.user_left_click_started?
+      return !@was_left_clicking_before && @is_left_clicking_now
+    end
+    def self.user_right_click_started?
+      return !@was_left_clicking_before && @is_left_clicking_now
+    end
+    def self.user_left_clicked_once?
+      swm_logLine("user_left_clicked_once? #{@was_left_clicking_before} && #{!@is_left_clicking_now} => #{@was_left_clicking_before && !@is_left_clicking_now} (real: #{self.detect_real_mouse_click(Input::LeftMouseKey)})")  # TODO
+      return @was_left_clicking_before && !@is_left_clicking_now # Actually detects key release - it's fine as long as we don't need to distinguish long presses and short presses
+    end
+    def self.user_right_clicked_once?
+      return @was_right_clicking_before && !@is_right_clicking_now # Actually detects key release - it's fine as long as we don't need to distinguish long presses and short presses
+    end
+    def self.user_left_click_keeps_pressed?
+      return @was_left_clicking_before && @is_left_clicking_now
+    end
+    def self.user_right_click_keeps_pressed?
+      return @was_right_clicking_before && @is_right_clicking_now
+    end
+
     # Left clicking will call the "Action" keypress, which is appropriate only as long as the hovered option is correctly selected
     # This system ensures that the hovering detection is being run at least once just before the "Action" keypress
     # It exists to ensure compatibility with Joiplay, that does not have any real hovering prior to the click
@@ -60,18 +106,18 @@ module Mouse
       if button == Input::B # Back/Menu
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:EXIT_SCREEN) \
-          || Input.triggerex?(Input::RightMouseKey) # Just in case self.press? missed this
+          || Mouse::Sauiw::user_right_clicked_once? # Just in case self.press? missed this
         )
       end
       if button == Input::C # Action
         if $game_player && $scene && $scene.is_a?(Scene_Map) && !pbIsFaded?
           # We're in a Scene_map
           movement = Mouse::Sauiw::handle_movement()
-          return movement || Input.triggerex?(Input::C) if !movement.nil?
+          return movement || Input.mouse_old_input_trigger?(Input::C) if !movement.nil?
           Mouse::Sauiw::ticket_scene_handle_hover() # Since it's done as a map event, we're going to catch it this way
         end
         retval = Mouse::Sauiw::return_true_or_nil(
-          Input.triggerex?(Input::LeftMouseKey)
+          Mouse::Sauiw::user_left_clicked_once?
         )
         if retval
           Mouse::Sauiw::hover_callback_call(true)
@@ -90,16 +136,6 @@ module Mouse
       if button == Input::RIGHT
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:FIELD_NOTES_CLICK_RIGHT)
-        )
-      end
-      if button == Input::A # Sort bag by name
-        return Mouse::Sauiw::return_true_or_nil(
-          Mouse::Sauiw::check_and_reset_callback(:BAG_SORT_BY_NAME)
-        )
-      end
-      if button == Input::Z # Sort bag by type
-        return Mouse::Sauiw::return_true_or_nil(
-          Mouse::Sauiw::check_and_reset_callback(:BAG_SORT_BY_TYPE)
         )
       end
       return nil
@@ -132,11 +168,13 @@ module Mouse
       return nil
     end
 
+    @mouse_offset_x = $joiplay ? -7 : 0 # On joyplay, there's an X offset of +7
     def self.get_cursor_position_on_screen() # As pixels, relative to the top-left corner of the screen
       mouse_position = Mouse.getMousePos(false) # array, x:0 y:1
       return nil if mouse_position.nil?
+      # On desktop, Graphics.width = 512 and Graphics.height = 384
       return {
-        :X => mouse_position[0],
+        :X => mouse_position[0] + @mouse_offset_x,
         :Y => mouse_position[1]
       }
     end
@@ -145,6 +183,19 @@ module Mouse
 end
 
 module Input
+  if !defined?(self.mouse_old_input_update)
+    class <<self
+      alias_method :mouse_old_input_update, :update
+    end
+  end
+  def self.update(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::update()
+    Mouse::Sauiw::reset_callback(:POKEDEX_SEARCH_DONE) # The pokedex search is kind of a special case
+    #####/MODDED
+    return self.mouse_old_input_update(*args, **kwargs)
+  end
+
   if !defined?(self.mouse_old_input_press?)
     class <<self
       alias_method :mouse_old_input_press?, :press?
@@ -154,7 +205,7 @@ module Input
     #####MODDED
     # The purpose of this is to make the right mouse click behave consistently like the Cancel keypress (default ESC)
     # This method is not in the game scripts - we're replacing a method of a base Ruby module
-    return true if (button == Input::B) && Input.repeatex?(Input::RightMouseKey)
+    return true if (button == Input::B) && (Mouse::Sauiw::user_right_click_started? || Mouse::Sauiw::user_right_click_keeps_pressed?)
     #####/MODDED
     return self.mouse_old_input_press?(button)
   end
@@ -173,18 +224,6 @@ module Input
     #####/MODDED
     return self.mouse_old_input_trigger?(button)
   end
-
-  if !defined?(self.mouse_old_input_update)
-    class <<self
-      alias_method :mouse_old_input_update, :update
-    end
-  end
-  def self.update
-    self.mouse_old_input_update()
-    #####MODDED
-    Mouse::Sauiw::reset_callback(:POKEDEX_SEARCH_DONE) # The pokedex search is kind of a special case
-    #####/MODDED
-  end
 end
 
 ########################################################
@@ -194,28 +233,17 @@ end
 module Mouse
   #####MODDED
   module Sauiw
-    # !Input.repeatex?(Input::LeftMouseKey) skips a few frames, which kills the whole movement logic
-    # The mess with :MOVEMENT_xxx and @movement_player_xxx is due to that alone
-    # It's ugly as hell, but at least it does seem to be working...
     @movement_player_last_x = nil
     @movement_player_last_y = nil
-    @movement_player_last_direction = nil
     @movement_player_step_taken_cooldown = 10
     def self.handle_movement()
-      step_was_taken = $game_player.x != @movement_player_last_x || $game_player.y != @movement_player_last_y
-      @movement_player_step_taken_cooldown = 0 if step_was_taken
-      if step_was_taken || @movement_player_last_direction != $game_player.direction
-        Mouse::Sauiw::reset_callback(
-          :MOVEMENT_DOWN,
-          :MOVEMENT_LEFT,
-          :MOVEMENT_RIGHT,
-          :MOVEMENT_UP
-        )
-        @movement_player_last_x = $game_player.x
-        @movement_player_last_y = $game_player.y
-        @movement_player_last_direction = $game_player.direction
-      end
-      return false if !Input.repeatex?(Input::LeftMouseKey)
+      Mouse::Sauiw::reset_callback(
+        :MOVEMENT_DOWN,
+        :MOVEMENT_LEFT,
+        :MOVEMENT_RIGHT,
+        :MOVEMENT_UP
+      )
+      return false if !Mouse::Sauiw::user_left_click_keeps_pressed?
       return nil if Mouse::Sauiw::player_should_not_move?
       mouse_coordinates = Mouse::Sauiw::get_cursor_coordinates_on_screen()
       return false if mouse_coordinates.nil?
@@ -301,11 +329,16 @@ module Mouse
         return
       end
       return if !handle_corners
+      if $game_player.x != @movement_player_last_x || $game_player.y != @movement_player_last_y
+        @movement_player_last_x = $game_player.x
+        @movement_player_last_y = $game_player.y
+        @movement_player_step_taken_cooldown = 0
+      end
       if  @movement_player_step_taken_cooldown > 0
         @movement_player_step_taken_cooldown -= 1
         return
       end
-      @movement_player_step_taken_cooldown = 10
+      @movement_player_step_taken_cooldown = 21
       # Corners - this will alternate between the two valid directions adjacent to the corner
       # $game_player.direction:
       # 2 => down
@@ -374,9 +407,159 @@ end
 ########################################################
 
 
-class Window_DrawableCommand < SpriteWindow_Selectable
+# class Window_DrawableCommand < SpriteWindow_Selectable
+#   #####MODDED
+#   def mouse_update_hover
+#     pokedex_search_index = 0 # The pokedex search is kind of a special case
+#     return pokedex_search_index if Mouse::Sauiw::check_callback(:POKEDEX_SEARCH_DONE)
+#     return pokedex_search_index if !defined?(@commands)
+#     return pokedex_search_index if @commands.length <= 0
+#     mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+#     return pokedex_search_index if mouse_position.nil?
+#     borderX_halved = borderX / 2
+#     return pokedex_search_index if mouse_position[:X] <= (@x + borderX_halved)
+#     return pokedex_search_index if mouse_position[:X] >= (@x + @width - borderX_halved)
+#     line_first = top_row - 1
+#     line_last = line_first + page_row_max + 3
+#     index_new = line_first + ((mouse_position[:Y] - @y + (borderY / 2)) / rowHeight).floor
+#     pokedex_search_index = index_new
+#     line_first = 0 if line_first < 0
+#     line_last = @commands.length-1 if line_last >= @commands.length
+#     if @index != index_new && !((index_new < line_first) || (index_new > line_last))
+#       @index = index_new
+#       update_cursor_rect
+#     end
+#     return pokedex_search_index
+#   end
+#   #####/MODDED
+# end
+
+# class PokemonMenu_Scene
+#   #####MODDED
+#   def mouse_update_hover
+#     @sprites["cmdwindow"].mouse_update_hover() if !@sprites["cmdwindow"].nil?
+#   end
+#   #####/MODDED
+
+#   def pbShowCommands(commands)
+#     ret = -1
+#     cmdwindow = @sprites["cmdwindow"]
+#     cmdwindow.viewport = @viewport
+#     cmdwindow.index = $PokemonTemp.menuLastChoice
+#     cmdwindow.resizeToFit(commands)
+#     cmdwindow.commands = commands
+#     cmdwindow.x = Graphics.width - cmdwindow.width
+#     cmdwindow.y = 0
+#     cmdwindow.visible = true
+#     lastread = nil
+#     loop do
+#       Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover)) #####MODDED_OBLIGATORY
+#       mouse_update_hover() if MOUSE_UPDATE_HOVERING #####MODDED_OBLIGATORY
+#       cmdwindow.update
+#       if commands[cmdwindow.index] != lastread
+#         tts(commands[cmdwindow.index])
+#         lastread = commands[cmdwindow.index]
+#       end
+#       Graphics.update
+#       Input.update
+#       pbUpdateSceneMap
+#       if Input.trigger?(Input::B)
+#         ret = -1
+#         break
+#       end
+#       if Input.trigger?(Input::C)
+#         ret = cmdwindow.index
+#         $PokemonTemp.menuLastChoice = ret
+#         break
+#       end
+#     end
+#     return ret
+#   end
+# end
+
+# class PokeBattle_Scene
+#   #####MODDED
+#   def mouse_update_hover_msg(cw)
+#     cw.mouse_update_hover() if !cw.nil?
+#   end
+#   #####/MODDED
+
+#   def pbShowCommands(msg, commands, defaultValue)
+#     pbWaitMessage
+#     pbRefresh
+#     tts(msg)
+#     pbShowWindow(MESSAGEBOX)
+#     dw = @sprites["messagewindow"]
+#     dw.text = msg
+#     cw = Window_CommandPokemon.new(commands, tts: false)
+#     cw.x = Graphics.width - cw.width
+#     cw.y = Graphics.height - cw.height - dw.height
+#     cw.index = 0
+#     cw.viewport = @viewport
+#     pbRefresh
+#     update_menu = true
+#     lastread = nil
+#     loop do
+#       cw.visible = !dw.busy?
+#       pbGraphicsUpdate
+#       Input.update
+#       Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover_msg), [cw]) #####MODDED_OBLIGATORY
+#       mouse_update_hover_msg(cw) if MOUSE_UPDATE_HOVERING #####MODDED_OBLIGATORY
+#       pbFrameUpdate(cw, update_menu, true) #####MODDED_OBLIGATORY, was pbFrameUpdate(cw, update_menu)
+#       update_menu = false
+#       dw.update
+#       tts(commands[cw.index]) if commands[cw.index] != lastread
+#       lastread = commands[cw.index]
+#       if Input.trigger?(Input::B) && defaultValue >= 0
+#         update_menu = true
+#         if dw.busy?
+#           pbPlayDecisionSE() if dw.pausing?
+#           dw.resume
+#         else
+#           cw.dispose
+#           dw.text = ""
+#           return defaultValue
+#         end
+#       end
+#       if Input.trigger?(Input::C)
+#         update_menu = true
+#         if dw.busy?
+#           pbPlayDecisionSE() if dw.pausing?
+#           dw.resume
+#         else
+#           cw.dispose
+#           dw.text = ""
+#           return cw.index
+#         end
+#       end
+#       if Input.trigger?(Input::DOWN)
+#         update_menu = true
+#         cw.index = (cw.index + 1) % commands.length
+#       end
+#       if Input.trigger?(Input::UP)
+#         update_menu = true
+#         cw.index = (cw.index - 1) % commands.length
+#       end
+#     end
+#   end
+# end
+
+class Window_CommandPokemon < Window_DrawableCommand
+  if !defined?(mouse_old_update_parent)
+    alias :mouse_old_update_parent :update
+  end
+  def update(*args, **kwargs)
+    #####MODDED
+    begin
+      mouse_update_hover_parent() if MOUSE_UPDATE_HOVERING || Mouse::Sauiw::user_left_clicked_once?
+    rescue
+    end
+    #####/MODDED
+    return mouse_old_update_parent(*args, **kwargs)
+  end
+
   #####MODDED
-  def mouse_update_hover
+  def mouse_update_hover_parent
     pokedex_search_index = 0 # The pokedex search is kind of a special case
     return pokedex_search_index if Mouse::Sauiw::check_callback(:POKEDEX_SEARCH_DONE)
     return pokedex_search_index if !defined?(@commands)
@@ -401,115 +584,6 @@ class Window_DrawableCommand < SpriteWindow_Selectable
   #####/MODDED
 end
 
-class PokemonMenu_Scene
-  #####MODDED
-  def mouse_update_hover
-    @sprites["cmdwindow"].mouse_update_hover() if !@sprites["cmdwindow"].nil?
-  end
-  #####/MODDED
-
-  def pbShowCommands(commands)
-    ret = -1
-    cmdwindow = @sprites["cmdwindow"]
-    cmdwindow.viewport = @viewport
-    cmdwindow.index = $PokemonTemp.menuLastChoice
-    cmdwindow.resizeToFit(commands)
-    cmdwindow.commands = commands
-    cmdwindow.x = Graphics.width - cmdwindow.width
-    cmdwindow.y = 0
-    cmdwindow.visible = true
-    lastread = nil
-    loop do
-      Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover)) #####MODDED_OBLIGATORY
-      mouse_update_hover() if MOUSE_UPDATE_HOVERING #####MODDED_OBLIGATORY
-      cmdwindow.update
-      if commands[cmdwindow.index] != lastread
-        tts(commands[cmdwindow.index])
-        lastread = commands[cmdwindow.index]
-      end
-      Graphics.update
-      Input.update
-      pbUpdateSceneMap
-      if Input.trigger?(Input::B)
-        ret = -1
-        break
-      end
-      if Input.trigger?(Input::C)
-        ret = cmdwindow.index
-        $PokemonTemp.menuLastChoice = ret
-        break
-      end
-    end
-    return ret
-  end
-end
-
-class PokeBattle_Scene
-  #####MODDED
-  def mouse_update_hover_msg(cw)
-    cw.mouse_update_hover() if !cw.nil?
-  end
-  #####/MODDED
-
-  def pbShowCommands(msg, commands, defaultValue)
-    pbWaitMessage
-    pbRefresh
-    tts(msg)
-    pbShowWindow(MESSAGEBOX)
-    dw = @sprites["messagewindow"]
-    dw.text = msg
-    cw = Window_CommandPokemon.new(commands, tts: false)
-    cw.x = Graphics.width - cw.width
-    cw.y = Graphics.height - cw.height - dw.height
-    cw.index = 0
-    cw.viewport = @viewport
-    pbRefresh
-    update_menu = true
-    lastread = nil
-    loop do
-      cw.visible = !dw.busy?
-      pbGraphicsUpdate
-      Input.update
-      Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover_msg), [cw]) #####MODDED_OBLIGATORY
-      mouse_update_hover_msg(cw) if MOUSE_UPDATE_HOVERING #####MODDED_OBLIGATORY
-      pbFrameUpdate(cw, update_menu, true) #####MODDED_OBLIGATORY, was pbFrameUpdate(cw, update_menu)
-      update_menu = false
-      dw.update
-      tts(commands[cw.index]) if commands[cw.index] != lastread
-      lastread = commands[cw.index]
-      if Input.trigger?(Input::B) && defaultValue >= 0
-        update_menu = true
-        if dw.busy?
-          pbPlayDecisionSE() if dw.pausing?
-          dw.resume
-        else
-          cw.dispose
-          dw.text = ""
-          return defaultValue
-        end
-      end
-      if Input.trigger?(Input::C)
-        update_menu = true
-        if dw.busy?
-          pbPlayDecisionSE() if dw.pausing?
-          dw.resume
-        else
-          cw.dispose
-          dw.text = ""
-          return cw.index
-        end
-      end
-      if Input.trigger?(Input::DOWN)
-        update_menu = true
-        cw.index = (cw.index + 1) % commands.length
-      end
-      if Input.trigger?(Input::UP)
-        update_menu = true
-        cw.index = (cw.index - 1) % commands.length
-      end
-    end
-  end
-end
 
 # TODO this interferes with EVERYTHING! With almost every single other hover_callback_set!
 #    Also, Messages like "Pokemon wants to learn MOVE" ignore the mouse in battle because of a similar conflict...
@@ -636,6 +710,7 @@ def mouse_pokemon_load_scene_update_hover(windows)
   mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
   return if mouse_position.nil?
   line_sprite = windows['panel0']
+  return if line_sprite.nil?
   line_start = line_sprite.x
   return if mouse_position[:X] <= line_start
   line_end = line_start + line_sprite.bitmap.rect.width
@@ -959,176 +1034,129 @@ class PokeBattle_Scene
 end
 
 
+########################################################
+######################   Bag   #########################
+########################################################
+
+
+class PokemonBag_Scene
+  if !defined?(mouse_old_update)
+    alias :mouse_old_update :update
+  end
+  def update(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover), [true])
+    mouse_update_hover(false) if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_update(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover(was_clicked)
+    return if !@sprites["helpwindow"].nil? && @sprites["helpwindow"].visible # An item is selected
+    return if !@sprites["msgwindow"].nil? && @sprites["msgwindow"].visible # An item is selected
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    iw = @sprites["itemwindow"]
+    return if iw.nil?
+    mouse_update_hover_item_list(mouse_position, iw)
+    mouse_update_hover_slider(mouse_position, iw, was_clicked) # This will actually check for dragging input
+    if was_clicked
+      mouse_update_hover_sort(mouse_position, iw)
+      mouse_update_hover_pocket(mouse_position, iw)
+    end
+  end
+
+  def mouse_update_hover_item_list(mouse_position, iw)
+    border_x_halved = iw.borderX/2
+    return if mouse_position[:X] <= iw.x + border_x_halved
+    return if mouse_position[:X] >= iw.x + iw.width - border_x_halved
+    y_start = iw.y + iw.borderY
+    if mouse_position[:Y] < y_start
+      # Scroll up
+      iw.index = iw.top_item - 1 if iw.top_item > 0
+      return
+    end
+    items_max_per_page = iw.page_item_max
+    row_height = (iw.height - iw.borderY) / (items_max_per_page + 1)
+    visible_rows_above = ((mouse_position[:Y] - y_start)/ row_height).floor + 1
+    index = [@bag.pockets[iw.pocket].length, iw.top_item - 1 + visible_rows_above].min
+    if visible_rows_above < items_max_per_page
+      # The hovered item is selected; no need for scrolling
+      iw.index = index
+      return
+    end
+    return if mouse_position[:Y] >= y_start + (visible_rows_above + 1) * row_height
+    # Scroll down
+    iw.index = [index + 1, @bag.pockets[iw.pocket].length].min
+  end
+  
+  def mouse_update_hover_sort(mouse_position, iw)
+    # Got these coordinates directly from the background image
+    return if mouse_position[:Y] <= 155
+    return if mouse_position[:Y] >= 175
+    return if mouse_position[:X] <= 55
+    return if mouse_position[:X] >= 175
+    Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
+    pbHandleSort(iw.pocket, mouse_position[:X] < 115 ? :name : :type)
+    pbRefresh
+  end
+
+  def mouse_update_hover_pocket(mouse_position, iw)
+    return if mouse_position[:Y] <= 230
+    return if mouse_position[:Y] >= 250
+    x_start = 5.0
+    x_end = 180.0
+    return if mouse_position[:X] <= x_start
+    return if mouse_position[:X] >= x_end
+    num_pockets = PokemonBag.numPockets
+    pocket = ((mouse_position[:X] - x_start) / (x_end - x_start) * num_pockets).floor + 1
+    pocket = [[pocket, 1].max, num_pockets].min
+    Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
+    return if pocket == iw.pocket
+    iw.pocket = pocket
+    @bag.lastpocket = iw.pocket
+    pbRefresh
+  end
+  
+  def mouse_update_hover_slider(mouse_position, iw, was_clicked)
+    return if mouse_position[:X] <= 470
+    return if mouse_position[:X] >= 505
+    return if mouse_position[:Y] <= 20
+    return if mouse_position[:Y] >= 260
+    Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
+    items_total = @bag.pockets[iw.pocket].length
+    return if items_total <= 0
+    bar_y_start = 60.0
+    bar_y_end = 220.0
+    bar_height = bar_y_end - bar_y_start
+    slider_height = @sprites["slider"].bitmap.height
+    slider_height_halved = slider_height / 2
+    if mouse_position[:Y] < bar_y_start
+      return if !was_clicked
+      new_index = iw.index - iw.page_item_max
+    elsif mouse_position[:Y] < bar_y_end
+      return if !Mouse::Sauiw::user_left_click_keeps_pressed? && !was_clicked
+      new_index = ((mouse_position[:Y] - bar_y_start - slider_height_halved) / (bar_height - slider_height) * items_total).floor
+    else
+      return if !was_clicked
+      new_index = iw.index + iw.page_item_max
+    end
+    new_index = [[new_index, 0].max, items_total].min
+    return if new_index == iw.index
+    iw.index = new_index
+    @sprites["slider"].y = bar_y_start + (bar_height - slider_height) * new_index / items_total
+  end
+  #####/MODDED
+end
+
+
 if false # TODO UPDATED UNTIL HERE
   ## TODO: check weather/time selection, field notes, pulse dex, pokegear->move tutor
 
 ########################################################
 ####################   Hovering   ######################
 ########################################################
-
-
-#####################      6      ######################
-#Bag (in and out of battle)
-
-class PokemonBag_Scene
-  #####MODDED
-  def aMouseOverItemList(mouse_position, aIW)
-    iBorder = aIW.borderX/2
-    iX0 = aIW.x+iBorder
-    iX1 = aIW.x+aIW.width-iBorder
-    if (mouse_position[:X] > iX0) && (mouse_position[:X] < iX1)
-      iLimit = aIW.y+aIW.borderY
-      iScroll = 0
-      if mouse_position[:Y] < iLimit
-        iScroll = -1
-      else
-        iL = aIW.page_item_max
-        iH = (aIW.height-aIW.borderY)/(iL+1)
-        
-        iIndex = aIW.top_item-1
-        bFound = false
-        for i in 0...iL
-          iIndex = iIndex+1
-          iLimit = iLimit+iH
-          if mouse_position[:Y] < iLimit
-            bFound = true
-            break
-          end
-        end
-        if bFound
-          iIndex = @bag.pockets[aIW.pocket].length if iIndex > @bag.pockets[aIW.pocket].length
-          aIW.index = iIndex
-        else
-          iScroll = 1
-        end
-      end
-      if iScroll != 0
-        if iScroll < 0
-          aIW.index = aIW.top_item-1 if aIW.top_item > 0
-        else
-          #If we have iScroll > 0 then we defined iIndex and iLimit for sure; also, bFound is false
-          if mouse_position[:Y] < (iLimit+iH)
-            iIndex = iIndex+1
-            iIndex = @bag.pockets[aIW.pocket].length if iIndex > @bag.pockets[aIW.pocket].length
-            aIW.index = iIndex
-          end
-        end
-      end
-    end
-  end
-  
-  def aMouseOverPocket(mouse_position, aIW)
-    Mouse::Sauiw::reset_callback(
-      :BAG_SORT_BY_NAME,
-      :BAG_SORT_BY_TYPE
-    )
-    
-    if Input.triggerex?(Input::LeftMouseKey)
-      #Got the coordinates directly from the background image
-      if (mouse_position[:Y] > 145) && (mouse_position[:Y] < 180)
-        if (mouse_position[:X] > 25) && (mouse_position[:X] < 150)
-          #Sort
-          Mouse::Sauiw::set_callback(
-            :BAG_SORT_BY_NAME,
-            # :BAG_SORT_BY_TYPE, # TODO check the coordinates and set the correct click event
-            :INTERCEPT_CLICK
-          )
-        end
-      elsif (mouse_position[:Y] > 230) && (mouse_position[:Y] < 250)
-        iX0 = 5
-        iX1 = 180
-        if (mouse_position[:X] > iX0) && (mouse_position[:X] < iX1)
-          #Pocket
-          iL = PokemonBag.numPockets
-          iW = (iX1-iX0)/iL
-          iP = iL-((iX1-mouse_position[:X])/iW).floor
-          
-          #Check; shouldn't actually be needed, but better safe than sorry
-          iP = 1 if iP < 1
-          iP = iL if iP > iL
-          
-          #Finish
-          Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-          if iP != aIW.pocket
-            aIW.pocket = iP
-            @bag.lastpocket = aIW.pocket
-            pbRefresh
-          end
-        end
-      end
-    end
-  end
-  
-  def aMouseOverSlider(mouse_position, aIW)
-    if Input.repeatex?(Input::LeftMouseKey)
-      if (mouse_position[:X] > 470) && (mouse_position[:X] < 505)
-        if (mouse_position[:Y] > 55) && (mouse_position[:Y] < 220)
-          iMax = aIW.itemCount-1
-          iY = mouse_position[:Y]-@sprites["slider"].bitmap.height/2
-          iIndex = (iY-60)*iMax/116
-          iIndex = 0 if iIndex < 0
-          iIndex = iMax if iIndex > iMax
-          
-          if iIndex != aIW.index
-            aIW.index = iIndex
-            @sprites["slider"].y = iY
-          end
-          
-          Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-        elsif (mouse_position[:Y] > 20) && (mouse_position[:Y] <= 55)
-          iMax = aIW.itemCount-1
-          if iMax > 0
-            iIndex = aIW.index-aIW.page_item_max
-            iIndex = 0 if iIndex < 0
-            iIndex = iMax if iIndex > iMax
-            
-            iY = 60+116.0 * iIndex/iMax
-            
-            if iIndex != aIW.index
-              aIW.index = iIndex
-              @sprites["slider"].y = iY
-            end
-            
-            Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-          end
-        elsif (mouse_position[:Y] >= 220) && (mouse_position[:Y] < 260)
-          iMax = aIW.itemCount-1
-          if iMax > 0
-            iIndex = aIW.index+aIW.page_item_max
-            iIndex = 0 if iIndex < 0
-            iIndex = iMax if iIndex > iMax
-            
-            iY = 60+116.0 * iIndex/iMax
-            
-            if iIndex != aIW.index
-              aIW.index = iIndex
-              @sprites["slider"].y = iY
-            end
-            
-            Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-          end
-        end
-      end
-    end
-  end
-  
-  def aMouseHover()
-    return if (@sprites["helpwindow"].visible) || (@sprites["msgwindow"].visible) #An item is selected
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return if mouse_position.nil?
-    
-    aIW = @sprites["itemwindow"]
-    aMouseOverItemList(mouse_position, aIW)
-    aMouseOverPocket(mouse_position, aIW)
-    aMouseOverSlider(mouse_position, aIW)
-  end
-  #####/MODDED
-  
-  def update
-    aMouseHover() #####MODDED
-    pbUpdateSpriteHash(@sprites)
-  end
-end
 
 #####################      7      ######################
 #Party (in and out of battle)
@@ -1440,7 +1468,7 @@ end
 
 class ItemStorageScene
   #####MODDED
-  def aMouseOverItemList(mouse_position, aIW)
+  def mouse_update_hover_item_list(mouse_position, aIW)
     iBorder = aIW.borderX/2
     iX0 = aIW.x+iBorder
     iX1 = aIW.x+aIW.width-iBorder
@@ -1491,7 +1519,7 @@ class ItemStorageScene
     return if mouse_position.nil?
     
     aIW = @sprites["itemwindow"]
-    aMouseOverItemList(mouse_position, aIW)
+    mouse_update_hover_item_list(mouse_position, aIW)
   end
   #####/MODDED
   
@@ -1506,7 +1534,7 @@ end
 
 class PokemonMartScene
   #####MODDED
-  def aMouseOverItemList(mouse_position, aIW)
+  def mouse_update_hover_item_list(mouse_position, aIW)
     iBorder = aIW.borderX/2
     iX0 = aIW.x+iBorder
     iX1 = aIW.x+aIW.width-iBorder
@@ -1559,7 +1587,7 @@ class PokemonMartScene
     return if mouse_position.nil?
     
     aIW = @sprites["itemwindow"]
-    aMouseOverItemList(mouse_position, aIW)
+    mouse_update_hover_item_list(mouse_position, aIW)
   end
   #####/MODDED
   
