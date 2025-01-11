@@ -24,52 +24,6 @@ module Mouse
     # Stands for "Sledgehammering away until it works"
     # Yes, seriously.
 
-    @is_left_clicking_now = false
-    @is_right_clicking_now = false
-    @was_left_clicking_before = false
-    @was_right_clicking_before = false
-    def self.update
-      @was_left_clicking_before = @is_left_clicking_now
-      @was_right_clicking_before = @is_right_clicking_now
-      @is_left_clicking_now = self.detect_real_mouse_click(Input::LeftMouseKey)
-      @is_right_clicking_now = self.detect_real_mouse_click(Input::RightMouseKey)
-      swm_logLine("update #{@was_left_clicking_before} - #{@is_left_clicking_now}") # TODO
-    end
-    def self.detect_real_mouse_click(mouse_key)
-      if !$joiplay || mouse_key == Input::RightMouseKey
-        # return true if Input.trigger?(mouse_key) # Was aliased by this mod; normally returns true when the mouse button is first being pressed
-        # return true if Input.triggerex?(mouse_key) # Returns true when the mouse button is first being pressed
-        # return true if Input.mouse_old_input_trigger?(mouse_key) # Returns true when the mouse button is first being pressed
-        # return true if Input.repeat?(mouse_key) # Returns true once every X frames as long as the mouse button is being held down
-        # return true if Input.repeatex?(mouse_key) # Returns true once every X frames as long as the mouse button is being held down
-        # return true if Input.press?(mouse_key) # Was aliased by this mod; normally it returns true if the mouse button is currently being held down
-        return true if Input.pressex?(mouse_key) # Returns true if the mouse button is currently being held down
-        # return true if Input.mouse_old_input_press?(mouse_key) # Returns true if the mouse button is currently being held down
-        return false
-      end
-      return true if !Mouse.getMousePos(false).nil?
-      return false
-    end
-    def self.user_left_click_started?
-      return !@was_left_clicking_before && @is_left_clicking_now
-    end
-    def self.user_right_click_started?
-      return !@was_left_clicking_before && @is_left_clicking_now
-    end
-    def self.user_left_clicked_once?
-      swm_logLine("user_left_clicked_once? #{@was_left_clicking_before} && #{!@is_left_clicking_now} => #{@was_left_clicking_before && !@is_left_clicking_now} (real: #{self.detect_real_mouse_click(Input::LeftMouseKey)})")  # TODO
-      return @was_left_clicking_before && !@is_left_clicking_now # Actually detects key release - it's fine as long as we don't need to distinguish long presses and short presses
-    end
-    def self.user_right_clicked_once?
-      return @was_right_clicking_before && !@is_right_clicking_now # Actually detects key release - it's fine as long as we don't need to distinguish long presses and short presses
-    end
-    def self.user_left_click_keeps_pressed?
-      return @was_left_clicking_before && @is_left_clicking_now
-    end
-    def self.user_right_click_keeps_pressed?
-      return @was_right_clicking_before && @is_right_clicking_now
-    end
-
     # Left clicking will call the "Action" keypress, which is appropriate only as long as the hovered option is correctly selected
     # This system ensures that the hovering detection is being run at least once just before the "Action" keypress
     # It exists to ensure compatibility with Joiplay, that does not have any real hovering prior to the click
@@ -106,7 +60,7 @@ module Mouse
       if button == Input::B # Back/Menu
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:EXIT_SCREEN) \
-          || Mouse::Sauiw::user_right_clicked_once? # Just in case self.press? missed this
+          || Input.triggerex?(Input::RightMouseKey) # Just in case self.press? missed this
         )
       end
       if button == Input::C # Action
@@ -117,7 +71,7 @@ module Mouse
           Mouse::Sauiw::ticket_scene_handle_hover() # Since it's done as a map event, we're going to catch it this way
         end
         retval = Mouse::Sauiw::return_true_or_nil(
-          Mouse::Sauiw::user_left_clicked_once?
+          Input.triggerex?(Input::LeftMouseKey)
         )
         if retval
           Mouse::Sauiw::hover_callback_call(true)
@@ -190,7 +144,6 @@ module Input
   end
   def self.update(*args, **kwargs)
     #####MODDED
-    Mouse::Sauiw::update()
     Mouse::Sauiw::reset_callback(:POKEDEX_SEARCH_DONE) # The pokedex search is kind of a special case
     #####/MODDED
     return self.mouse_old_input_update(*args, **kwargs)
@@ -205,7 +158,7 @@ module Input
     #####MODDED
     # The purpose of this is to make the right mouse click behave consistently like the Cancel keypress (default ESC)
     # This method is not in the game scripts - we're replacing a method of a base Ruby module
-    return true if (button == Input::B) && (Mouse::Sauiw::user_right_click_started? || Mouse::Sauiw::user_right_click_keeps_pressed?)
+    return true if (button == Input::B) && Input.pressex?(Input::RightMouseKey)
     #####/MODDED
     return self.mouse_old_input_press?(button)
   end
@@ -243,7 +196,7 @@ module Mouse
         :MOVEMENT_RIGHT,
         :MOVEMENT_UP
       )
-      return false if !Mouse::Sauiw::user_left_click_keeps_pressed?
+      return false if !Input.pressex?(Input::LeftMouseKey)
       return nil if Mouse::Sauiw::player_should_not_move?
       mouse_coordinates = Mouse::Sauiw::get_cursor_coordinates_on_screen()
       return false if mouse_coordinates.nil?
@@ -551,7 +504,7 @@ class Window_CommandPokemon < Window_DrawableCommand
   def update(*args, **kwargs)
     #####MODDED
     begin
-      mouse_update_hover_parent() if MOUSE_UPDATE_HOVERING || Mouse::Sauiw::user_left_clicked_once?
+      mouse_update_hover_parent() if MOUSE_UPDATE_HOVERING || Input.pressex?(Input::LeftMouseKey)
     rescue
     end
     #####/MODDED
@@ -1136,7 +1089,7 @@ class PokemonBag_Scene
       return if !was_clicked
       new_index = iw.index - iw.page_item_max
     elsif mouse_position[:Y] < bar_y_end
-      return if !Mouse::Sauiw::user_left_click_keeps_pressed? && !was_clicked
+      return if !Input.pressex?(Input::LeftMouseKey) && !was_clicked
       new_index = ((mouse_position[:Y] - bar_y_start - slider_height_halved) / (bar_height - slider_height) * items_total).floor
     else
       return if !was_clicked
@@ -1151,66 +1104,83 @@ class PokemonBag_Scene
 end
 
 
+########################################################
+#####################   Party   ########################
+########################################################
+
+
+require 'set'
+class PokemonScreen_Scene
+  if !defined?(mouse_old_update)
+    alias :mouse_old_update :update
+  end
+  def update(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover), [true])
+    mouse_update_hover(false) if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_update(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover(was_clicked)
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    hw = @sprites["helpwindow"]
+    return if hw.nil?
+    return if !Set[
+      # "Choose a pokemon", or "Move to where?", etc
+      'Choo',
+      'Move',
+      'Give',
+      'Use ',
+      'Teac',
+      'Fuse'
+    ].include?(hw.text[0..3])
+    return if mouse_check_exit_screen(mouse_position, was_clicked)
+    index = mouse_get_hovered_party_member(mouse_position)
+    return if index.nil?
+    return if index == @activecmd
+    @sprites["pokemon#{@activecmd}"].selected = false
+    @activecmd = index
+    @sprites["pokemon#{index}"].selected = true
+  end
+
+  def mouse_check_exit_screen(mouse_position, was_clicked)
+    return false if !was_clicked
+    return false if mouse_position[:X] <= 400
+    return false if mouse_position[:Y] <= 330
+    return false if mouse_position[:Y] >= 375
+    Mouse::Sauiw::set_callback(
+      :EXIT_SCREEN,
+      :INTERCEPT_CLICK
+    )
+    return true
+  end
+
+  def mouse_get_hovered_party_member(mouse_position)
+    for i in 0...@party.length
+      next if @party[i].nil?
+      mon_sprite = @sprites["pokemon#{i}"]
+      next if mon_sprite.nil?
+      next if mouse_position[:X] <= mon_sprite.x
+      next if mouse_position[:X] >= mon_sprite.x + mon_sprite.bitmap.width
+      next if mouse_position[:Y] <= mon_sprite.y
+      next if mouse_position[:Y] >= mon_sprite.y + mon_sprite.bitmap.height
+      return i
+    end
+    return nil
+  end
+  #####/MODDED
+end
+
+
 if false # TODO UPDATED UNTIL HERE
   ## TODO: check weather/time selection, field notes, pulse dex, pokegear->move tutor
 
 ########################################################
 ####################   Hovering   ######################
 ########################################################
-
-#####################      7      ######################
-#Party (in and out of battle)
-
-class PokemonScreen_Scene
-  #####MODDED
-  def aMouseSelMon(mouse_position)
-    if Input.triggerex?(Input::LeftMouseKey)
-      if mouse_position[:X] > 400
-        if (mouse_position[:Y] > 330) && (mouse_position[:Y] < 375)
-          Mouse::Sauiw::set_callback(
-            :EXIT_SCREEN,
-            :INTERCEPT_CLICK
-          )
-        end
-      end
-    else
-      bFound = false
-      for i in 0...@party.length
-        aSprite = @sprites["pokemon#{i}"]
-        if (mouse_position[:X] > aSprite.x) && (mouse_position[:X] < (aSprite.x+aSprite.bitmap.width))
-          if (mouse_position[:Y] > aSprite.y) && (mouse_position[:Y] < (aSprite.y+aSprite.bitmap.height))
-            iSel = i
-            bFound = true
-            break
-          end
-        end
-      end
-      
-      #We don't have a width or height; instead, we just check the topleft corner without breaking the loop
-      if bFound && (iSel != @activecmd) && (@party[i] != nil)
-        @sprites["pokemon#{@activecmd}"].selected = false
-        @activecmd=iSel
-        @sprites["pokemon#{iSel}"].selected = true
-      end
-    end
-  end
-  
-  def aMouseHover()
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return if mouse_position.nil?
-    
-    sTxt = @sprites["helpwindow"].text
-    sTxt = sTxt[0..3]
-    
-    aMouseSelMon(mouse_position) if (sTxt == "Choo") || (sTxt == "Move") || (sTxt == "Give") || (sTxt == "Use ") || (sTxt == "Teac") || (sTxt == "Fuse") #"Choose a pokemon" or "Move to where?" etc
-  end
-  #####/MODDED
-  
-  def update
-    aMouseHover() #####MODDED
-    pbUpdateSpriteHash(@sprites)
-  end
-end
 
 #####################      8      ######################
 #Map
