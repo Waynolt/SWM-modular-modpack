@@ -12,6 +12,7 @@
 
 
 #####MODDED
+require 'set'
 
 MOUSE_UPDATE_HOVERING = true
 MOUSE_IGNORE_HOVER_ERRORS = false
@@ -1109,7 +1110,6 @@ end
 ########################################################
 
 
-require 'set'
 class PokemonScreen_Scene
   if !defined?(mouse_old_update)
     alias :mouse_old_update :update
@@ -1175,49 +1175,58 @@ class PokemonScreen_Scene
 end
 
 
+########################################################
+######################   Map   #########################
+########################################################
+
+
+class PokemonRegionMapScene
+  if !defined?(mouse_old_pbUpdate)
+    alias :mouse_old_pbUpdate :pbUpdate
+  end
+  def pbUpdate(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover))
+    mouse_update_hover() if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_pbUpdate(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover()
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    map_sprite = @sprites["map"]
+    return if map_sprite.nil?
+    map_cursor = @sprites["cursor"]
+    return if map_cursor.nil?
+    x_offset = mouse_position[:X] - map_sprite.x
+    return if x_offset <= 0
+    return if x_offset >= map_sprite.bitmap.width
+    y_offset = mouse_position[:Y] - map_sprite.y
+    return if y_offset <= 0
+    return if y_offset >= map_sprite.bitmap.height
+    new_x = x_offset / SQUAREWIDTH
+    if new_x != @mapX
+      @mapX = new_x
+      map_cursor.x = x_offset + (Graphics.width - map_sprite.bitmap.width - SQUAREWIDTH) / 2
+    end
+    new_y = y_offset / SQUAREHEIGHT
+    if new_y != @mapY
+      @mapY = new_y
+      map_cursor.y = y_offset + (Graphics.height - map_sprite.bitmap.height - SQUAREHEIGHT) / 2
+    end
+  end
+  #####/MODDED
+end
+
+
 if false # TODO UPDATED UNTIL HERE
   ## TODO: check weather/time selection, field notes, pulse dex, pokegear->move tutor
 
 ########################################################
 ####################   Hovering   ######################
 ########################################################
-
-#####################      8      ######################
-#Map
-
-class PokemonRegionMapScene
-  #####MODDED
-  def aMouseHover()
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return if mouse_position.nil?
-    
-    aMap = @sprites["map"]
-    if (mouse_position[:X] > aMap.x) && (mouse_position[:X] < (aMap.x+aMap.bitmap.width))
-      if (mouse_position[:Y] > aMap.y) && (mouse_position[:Y] < (aMap.y+aMap.bitmap.height))
-        xOffset = mouse_position[:X]-aMap.x
-        yOffset = mouse_position[:Y]-aMap.y
-        iNewX = xOffset/SQUAREWIDTH
-        iNewY = yOffset/SQUAREHEIGHT
-        
-        aCursor = @sprites["cursor"]
-        if iNewX != @mapX
-          @mapX = iNewX
-          aCursor.x = -SQUAREWIDTH/2+(@mapX*SQUAREWIDTH)+(Graphics.width-aMap.bitmap.width)/2
-        end
-        if iNewY != @mapY
-          @mapY = iNewY
-          aCursor.y = -SQUAREHEIGHT/2+(@mapY*SQUAREHEIGHT)+(Graphics.height-aMap.bitmap.height)/2
-        end
-      end
-    end
-  end
-  #####/MODDED
-  
-  def pbUpdate
-    aMouseHover() #####MODDED
-    pbUpdateSpriteHash(@sprites)
-  end
-end
 
 #####################      9      ######################
 #Nyu's PC: party selection
