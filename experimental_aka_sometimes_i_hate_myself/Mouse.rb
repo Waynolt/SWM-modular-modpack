@@ -164,6 +164,22 @@ module Input
     return self.mouse_old_input_press?(button)
   end
 
+  if !defined?(self.mouse_old_input_repeat?)
+    class <<self
+      alias_method :mouse_old_input_repeat?, :repeat?
+    end
+  end
+  def self.repeat?(button)
+    retval = self.mouse_old_input_repeat?(button)
+    #####MODDED
+    # This method is not in the game scripts - we're replacing a method of a base Ruby module
+    if !retval
+      return true if (button == Input::UP) && Mouse::Sauiw::check_callback(:PC_SELECT_PARTY_INTERNAL, :PC_SELECT_BOX_INTERNAL)
+    end
+    #####/MODDED
+    return retval
+  end
+
   if !defined?(self.mouse_old_input_trigger?)
     class <<self
       alias_method :mouse_old_input_trigger?, :trigger?
@@ -499,6 +515,7 @@ end
 # end
 
 class Window_CommandPokemon < Window_DrawableCommand
+  # TODO with this implementation, the messages with options on the left (like the one for using registered items) ignores mouse clicks (but not the hovering)
   if !defined?(mouse_old_update_parent)
     alias :mouse_old_update_parent :update
   end
@@ -1221,292 +1238,133 @@ class PokemonRegionMapScene
 end
 
 
+########################################################
+####################   Nyu's PC   ######################
+########################################################
+
+
+class PokemonStorageScene
+  if !defined?(mouse_old_pbSelectPartyInternal)
+    alias :mouse_old_pbSelectPartyInternal :pbSelectPartyInternal
+  end
+  def pbSelectPartyInternal(*args, **kwargs)
+    Mouse::Sauiw::set_callback(:PC_SELECT_PARTY_INTERNAL) #####MODDED
+    retval = mouse_old_pbSelectPartyInternal(*args, **kwargs)
+    Mouse::Sauiw::reset_callback(:PC_SELECT_PARTY_INTERNAL) #####MODDED
+    return retval
+  end
+
+  if !defined?(mouse_old_pbPartyChangeSelection)
+    alias :mouse_old_pbPartyChangeSelection :pbPartyChangeSelection
+  end
+  def pbPartyChangeSelection(key, selection)
+    #####MODDED
+    actual_key = mouse_get_actual_key_repeat()
+    return mouse_old_pbPartyChangeSelection(actual_key, selection) if !actual_key.nil?
+    return mouse_update_hover_party(selection) if MOUSE_UPDATE_HOVERING || Input.pressex?(Input::LeftMouseKey)
+    return selection
+    #####/MODDED
+  end
+
+  if !defined?(mouse_old_pbSelectBoxInternal)
+    alias :mouse_old_pbSelectBoxInternal :pbSelectBoxInternal
+  end
+  def pbSelectBoxInternal(*args, **kwargs)
+    Mouse::Sauiw::set_callback(:PC_SELECT_BOX_INTERNAL) #####MODDED
+    retval = mouse_old_pbSelectBoxInternal(*args, **kwargs)
+    Mouse::Sauiw::reset_callback(:PC_SELECT_BOX_INTERNAL) #####MODDED
+    return retval
+  end
+
+  if !defined?(mouse_old_pbChangeSelection)
+    alias :mouse_old_pbChangeSelection :pbChangeSelection
+  end
+  def pbChangeSelection(key, selection)
+    #####MODDED
+    actual_key = mouse_get_actual_key_repeat()
+    return mouse_old_pbChangeSelection(actual_key, selection) if !actual_key.nil?
+    return mouse_update_hover_box(selection) if MOUSE_UPDATE_HOVERING || Input.pressex?(Input::LeftMouseKey)
+    return selection
+    #####/MODDED
+  end
+
+  #####MODDED
+  def mouse_get_actual_key_repeat()
+    [
+      Input::UP,
+      Input::RIGHT,
+      Input::DOWN,
+      Input::LEFT
+    ].each do |key|
+      return key if Input.mouse_old_input_repeat?(key)
+    end
+    return nil
+  end
+
+  def mouse_update_hover_party(selection)
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return selection if mouse_position.nil?
+    box_party = @sprites["boxparty"]
+    return selection if box_party.nil?
+    x_adjusted = mouse_position[:X] - box_party.x
+    return selection if x_adjusted <= 16
+    return selection if x_adjusted >= box_party.bitmap.width
+    y_adjusted = mouse_position[:Y] - box_party.y
+    return selection if y_adjusted <= 0
+    return selection if y_adjusted >= box_party.bitmap.height
+    # Copied over from the actual code and adjusted
+    return 6 if y_adjusted > 208 # 144 + 64
+    if x_adjusted > 92
+      index_offset = 1.0
+      y_offset = 16.0
+    else
+      index_offset = 0.0
+      y_offset = 0.0
+    end
+    return selection if y_adjusted <= y_offset
+    i = [((y_adjusted - y_offset) / 64.0).floor, 2].min
+    return i * 2 + index_offset
+  end
+  #####/MODDED
+  
+  def mouse_update_hover_box(selection)
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return selection if mouse_position.nil?
+    #Coordinates taken directly from the bitmap
+    if (mouse_position[:Y] > 20) && (mouse_position[:Y] < 60)
+      #Upper bar
+      return -1 if (mouse_position[:X] > 230) && (mouse_position[:X] < 460) # Box name
+      return selection if !Input.triggerex?(Input::LeftMouseKey)
+      Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
+      return -4 if (mouse_position[:X] > 185) && (mouse_position[:X] < 220) # Move to previous box
+      return -5 if (mouse_position[:X] > 470) && (mouse_position[:X] < 505) # Move to next box
+      return selection
+    end
+    if (mouse_position[:Y] > 64) && (mouse_position[:Y] < 304) && (mouse_position[:X] > 202) && (mouse_position[:X] < 490)
+      #Box
+      #Squares' edges: 48
+      hovered_x = ((mouse_position[:X] - 202.0) / 48.0).floor
+      hovered_y = ((mouse_position[:Y] - 64.0) / 48.0).floor
+      return hovered_x + hovered_y * 6
+    end
+    if (mouse_position[:Y] > 325) && (mouse_position[:Y] < 365)
+      #Lower bar
+      return -2 if (mouse_position[:X] > 185) && (mouse_position[:X] < 355) # Party
+      return -3 if (mouse_position[:X] > 385) && (mouse_position[:X] < 505) # Close Box
+      return selection
+    end
+    return selection
+  end
+  #####/MODDED
+end
+
+
 if false # TODO UPDATED UNTIL HERE
   ## TODO: check weather/time selection, field notes, pulse dex, pokegear->move tutor
 
 ########################################################
 ####################   Hovering   ######################
 ########################################################
-
-#####################      9      ######################
-#Nyu's PC: party selection
-
-class PokemonStorageScene
-  #####MODDED
-  def aMouseHoverParty(rSel)
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return rSel if mouse_position.nil?
-    
-    iSel = rSel
-    
-    aTab = @sprites["boxparty"]
-    iMX = mouse_position[:X]-aTab.x
-    if (iMX > 16) && (iMX < aTab.bitmap.width)
-      iMY = mouse_position[:Y]-aTab.y
-      if (iMY > 0) && (iMY < aTab.bitmap.height)
-        #Copied over from the actual code
-        if iMY > 208 #144+64
-          iSel = 6
-        else
-          xDiv=92
-          yvalues=[0,16,64,80,128,144]
-          if iMX > xDiv
-            for i in 0...3
-              i2 = i*2+1
-              if iMY > yvalues[i2]
-                iSel = i2
-              end
-            end
-          else
-            for i in 0...3
-              i2 = i*2
-              if iMY > yvalues[i2]
-                iSel = i2
-              end
-            end
-          end
-        end
-      end
-    end
-    
-    return iSel
-  end
-  #####/MODDED
-  
-  def pbSelectPartyInternal(party,depositing)
-    selection=@selection
-    pbPartySetArrow(@sprites["arrow"],selection)
-    pbUpdateOverlay(selection,party)
-    pbSetMosaic(selection)
-    lastsel=1
-    loop do
-      Graphics.update
-      Input.update
-      key=-1
-      key=Input::DOWN if Input.repeat?(Input::DOWN)
-      key=Input::RIGHT if Input.repeat?(Input::RIGHT)
-      key=Input::LEFT if Input.repeat?(Input::LEFT)
-      key=Input::UP if Input.repeat?(Input::UP)
-      if key >= 0
-        pbPlayCursorSE()
-        newselection=pbPartyChangeSelection(key,selection)
-      #####MODDED
-      else
-        newselection=aMouseHoverParty(selection)
-      end
-      if newselection != selection
-      #####/MODDED
-        if newselection==-1
-          return -1 if !depositing
-        elsif newselection==-2
-          selection=lastsel
-        else
-          selection=newselection
-        end
-        pbPartySetArrow(@sprites["arrow"],selection)
-        lastsel=selection if selection>0
-        pbUpdateOverlay(selection,party)
-        pbSetMosaic(selection)
-      end
-      pbUpdateSpriteHash(@sprites)
-      if Input.trigger?(Input::C)
-        if selection>=0 && selection<6
-          @selection=selection
-          return selection
-        elsif selection==6 # Close Box 
-          @selection=selection
-          return (depositing) ? -3 : -1
-        end
-      end
-      if Input.trigger?(Input::B)
-        @selection=selection
-        return -1
-      end
-    end
-  end
-end
-
-#####################      10      ######################
-#Nyu's PC: box
-#box: pbSelectBoxInternal(party)
-
-class PokemonStorageScene
-  #####MODDED
-  def aMouseHoverBox(rSel)
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return rSel if mouse_position.nil?
-    iSel = rSel
-    
-    #Coordinates taken directly from the bitmap
-    if (mouse_position[:Y] > 20) && (mouse_position[:Y] < 60)
-      #Upper bar
-      if (mouse_position[:X] > 185) && (mouse_position[:X] < 220)
-        if Input.triggerex?(Input::LeftMouseKey)
-          Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-          iSel = -4 # Move to previous box
-        end
-      elsif (mouse_position[:X] > 230) && (mouse_position[:X] < 460)
-        iSel = -1 # Box name
-      elsif (mouse_position[:X] > 470) && (mouse_position[:X] < 505)
-        if Input.triggerex?(Input::LeftMouseKey)
-          Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-          iSel = -5 # Move to next box
-        end
-      end
-    elsif (mouse_position[:Y] > 64) && (mouse_position[:Y] < 304)
-      if mouse_position[:X] > 202
-        if mouse_position[:X] < 490
-          #Box
-          #Squares' edges: 48
-          
-          iX = ((mouse_position[:X]-202)/48).floor
-          iY = ((mouse_position[:Y]-64)/48).floor
-          
-          iSel = iX+iY*6
-        end
-      end
-    elsif (mouse_position[:Y] > 325) && (mouse_position[:Y] < 365)
-      #Lower bar
-      if (mouse_position[:X] > 185) && (mouse_position[:X] < 355)
-        iSel = -2 # Party
-      elsif (mouse_position[:X] > 385) && (mouse_position[:X] < 505)
-        iSel = -3 # Close Box
-      end
-    end
-    
-    return iSel
-  end
-  #####/MODDED
-  
-  def pbSelectBoxInternal(party)
-    selection=@selection
-    pbSetArrow(@sprites["arrow"],selection)
-    pbUpdateOverlay(selection)
-    pbSetMosaic(selection)
-    loop do
-      Graphics.update
-      Input.update
-      key=-1
-      key=Input::DOWN if Input.repeat?(Input::DOWN)
-      key=Input::RIGHT if Input.repeat?(Input::RIGHT)
-      key=Input::LEFT if Input.repeat?(Input::LEFT)
-      key=Input::UP if Input.repeat?(Input::UP)
-      iOldSel=selection #####MODDED
-      if key>=0
-        pbPlayCursorSE()
-        selection=pbChangeSelection(key,selection)
-      #####MODDED
-      else
-        selection=aMouseHoverBox(selection)
-      end
-      if selection != iOldSel
-      #####/MODDED
-        pbSetArrow(@sprites["arrow"],selection)
-        nextbox=-1
-        if selection==-4
-          nextbox=(@storage.currentBox==0) ? @storage.maxBoxes-1 : @storage.currentBox-1
-          pbSwitchBoxToLeft(nextbox)
-          @storage.currentBox=nextbox
-          selection=-1
-        elsif selection==-5
-          nextbox=(@storage.currentBox==@storage.maxBoxes-1) ? 0 : @storage.currentBox+1
-          pbSwitchBoxToRight(nextbox)
-          @storage.currentBox=nextbox
-          selection=-1
-        end
-        selection=-1 if selection==-4 || selection==-5
-        pbUpdateOverlay(selection)
-        pbSetMosaic(selection)
-      end
-      pbUpdateSpriteHash(@sprites)
-      if Input.trigger?(Input::C)
-        if selection>=0
-          @selection=selection
-          return [@storage.currentBox,selection]
-        elsif selection==-1 # Box name 
-          @selection=selection
-          return [-4,-1]
-        elsif selection==-2 # Party Pokémon 
-          @selection=selection
-          return [-2,-1]
-        elsif selection==-3 # Close Box 
-          @selection=selection
-          return [-3,-1]
-        end
-      end
-      if Input.trigger?(Input::B)
-        @selection=selection
-        return nil
-      end
-    end
-  end
-end
-
-#####################      11      ######################
-#PC: items
-
-class ItemStorageScene
-  #####MODDED
-  def mouse_update_hover_item_list(mouse_position, aIW)
-    iBorder = aIW.borderX/2
-    iX0 = aIW.x+iBorder
-    iX1 = aIW.x+aIW.width-iBorder
-    if (mouse_position[:X] > iX0) && (mouse_position[:X] < iX1)
-      iLimit = aIW.y+aIW.borderY
-      iScroll = 0
-      if mouse_position[:Y] < iLimit
-        iScroll = -1
-      else
-        iL = aIW.page_item_max
-        iH = (aIW.height-aIW.borderY)/(iL+1)
-        
-        iIndex = aIW.top_item-1
-        bFound = false
-        for i in 0...iL
-          iIndex = iIndex+1
-          iLimit = iLimit+iH
-          if mouse_position[:Y] < iLimit
-            bFound = true
-            break
-          end
-        end
-        if bFound
-          iIndex = @bag.items.length if iIndex > @bag.items.length
-          aIW.index = iIndex
-        else
-          iScroll = 1
-        end
-      end
-      if iScroll != 0
-        if iScroll < 0
-          aIW.index = aIW.top_item-1 if aIW.top_item > 0
-        else
-          #If we have iScroll > 0 then we defined iIndex and iLimit for sure; also, bFound is false
-          if mouse_position[:Y] < (iLimit+iH)
-            iIndex = iIndex+1
-            iIndex = @bag.items.length if iIndex > @bag.items.length
-            aIW.index = iIndex
-          end
-        end
-      end
-    end
-  end
-  
-  def aMouseHover()
-    return if (@sprites["helpwindow"].visible) || (@sprites["msgwindow"].visible) #An item is selected
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return if mouse_position.nil?
-    
-    aIW = @sprites["itemwindow"]
-    mouse_update_hover_item_list(mouse_position, aIW)
-  end
-  #####/MODDED
-  
-  def update
-    aMouseHover() #####MODDED
-    pbUpdateSpriteHash(@sprites)
-  end
-end
 
 #####################      12      ######################
 #Vendors: buy menu
