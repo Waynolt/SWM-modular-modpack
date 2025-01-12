@@ -19,7 +19,7 @@ MOUSE_IGNORE_HOVER_ERRORS = false
 
 #####/MODDED
 
-if !defined?(Mouse::Sauiw::hover_callback_clear)
+
 module Mouse
   #####MODDED
   module Sauiw
@@ -144,7 +144,6 @@ module Mouse
   end
   #####/MODDED
 end
-end
 
 module Input
   if !defined?(self.mouse_old_input_update)
@@ -221,7 +220,7 @@ end
 ####################   Movement   ######################
 ########################################################
 
-if !defined?(Mouse::Sauiw::handle_movement)
+
 module Mouse
   #####MODDED
   module Sauiw
@@ -241,11 +240,11 @@ module Mouse
       return false if mouse_coordinates.nil?
       x = mouse_coordinates[:X]
       y = mouse_coordinates[:Y]
-      if x.abs < 2 && y.abs < 2
-        Mouse::Sauiw::rotate_player_direction(x, y)
-        return true
-      end
-      Mouse::Sauiw::move_player(x, y)
+      # if x.abs < 2 && y.abs < 2 # Min distance for movement
+      #   Mouse::Sauiw::rotate_player_direction(x, y)
+      #   return true
+      # end
+      return Mouse::Sauiw::move_player(x, y)
       return false
     end
 
@@ -349,12 +348,18 @@ module Mouse
       # Determine where the player should look
       x_abs = x.abs
       y_abs = y.abs
+      tot_distance = x_abs + y_abs
+      return true if tot_distance <= 0
+      retval = tot_distance <= 1 # Activate if we're moving just 1 tile
+      # Min distance for movement
       diff = (x_abs - y_abs).abs - 1 # This is used to widen the screen slice that is accepted as "oblique"
       common = [x_abs, y_abs].min
       common -= 1 if diff < common
       trans_x = ( x_abs - common ) * (x > 0 ? 1 : -1)
       trans_y = ( y_abs - common ) * (y > 0 ? 1 : -1)
+      old_direction = $game_player.direction
       Mouse::Sauiw::rotate_player_direction(trans_x, trans_y, true)
+      return true if old_direction != $game_player.direction && tot_distance <= 1
       # Move that way
       case $game_player.direction
         when 2 # down
@@ -366,10 +371,10 @@ module Mouse
         when 8 # up
           Mouse::Sauiw::set_callback(:MOVEMENT_UP)
       end
+      return tot_distance <= 1
     end
   end
   #####/MODDED
-end
 end
 
 module Input
@@ -750,7 +755,7 @@ end
 # 6: x=15 y=14
 # TODO the hovered sprite does not animate
 
-if !defined?(Mouse::Sauiw::ticket_scene_handle_hover)
+
 module Mouse
   #####MODDED
   module Sauiw
@@ -803,7 +808,6 @@ module Mouse
     end
   end
   #####/MODDED
-end
 end
 
 
@@ -1243,10 +1247,10 @@ class PokemonRegionMapScene
     return if map_sprite.nil?
     map_cursor = @sprites["cursor"]
     return if map_cursor.nil?
-    x_offset = mouse_position[:X] - map_sprite.x
+    x_offset = mouse_position[:X] - map_sprite.x - SQUAREWIDTH / 2
     return if x_offset <= 0
     return if x_offset >= map_sprite.bitmap.width
-    y_offset = mouse_position[:Y] - map_sprite.y
+    y_offset = mouse_position[:Y] - map_sprite.y - SQUAREHEIGHT / 2
     return if y_offset <= 0
     return if y_offset >= map_sprite.bitmap.height
     new_x = x_offset / SQUAREWIDTH
@@ -1522,10 +1526,10 @@ class PokemonSummaryScene
   def mouse_update_hover_get_hovered_page(mouse_position)
     return nil if mouse_position[:Y] <= 20
     return nil if mouse_position[:Y] >= 42
-    # x_distance = 10
-    width = 36
-    x_start = 284
-    x_step = 46 # x_distance + width
+    # x_distance = 10.0
+    width = 36.0
+    x_start = 284.0
+    x_step = 46.0 # x_distance + width
     new_page = ((mouse_position[:X] - x_start) / x_step).floor
     return nil if new_page < 0
     return nil if new_page > 4
@@ -1692,6 +1696,118 @@ class PokemonSummaryScene
     end
     @sprites["movesel"].visible = false
   end
+end
+
+
+########################################################
+#################   Move relearner   ###################
+########################################################
+
+
+class MoveRelearnerScene
+  if !defined?(mouse_old_pbUpdate)
+    alias :mouse_old_pbUpdate :pbUpdate
+  end
+  def pbUpdate()
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover), [true])
+    mouse_update_hover(false) if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_pbUpdate()
+  end
+
+  #####MODDED
+  def mouse_update_hover(was_clicked)
+    return if @sprites["commands"].nil?
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    if was_clicked
+      # Scroll
+      return if mouse_position[:Y] <= 350
+      return if mouse_position[:Y] >= 380
+      if (mouse_position[:X] > 48) && (mouse_position[:X] < 124)
+        scroll_dir = +1.0
+      elsif (mouse_position[:X] > 133) && (mouse_position[:X] < 209)
+        scroll_dir = -1.0
+      else
+        return
+      end
+      scroll_dist = (VISIBLEMOVES - 1) * scroll_dir
+      new_index = @sprites["commands"].index + scroll_dist
+      Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
+    else
+      # Select move
+      return if mouse_position[:X] >= 255
+      y_start = 84.0
+      return if mouse_position[:Y] <= y_start
+      return if mouse_position[:Y] >= 340
+      y_step = 64.0
+      selected = ((mouse_position[:Y] - y_start) / y_step).floor
+      new_index = @sprites["commands"].top_item + selected
+    end
+    new_index = [[new_index, 0].max, @moves.length - 1].min
+    if new_index != @sprites["commands"].index
+      @sprites["commands"].index = new_index
+      pbDrawMoveList
+    end
+  end
+  #####/MODDED
+end
+
+
+########################################################
+#################   Move relearner   ###################
+########################################################
+
+
+class MoveTutorScene
+  if !defined?(mouse_old_pbUpdate)
+    alias :mouse_old_pbUpdate :pbUpdate
+  end
+  def pbUpdate()
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover), [true])
+    mouse_update_hover(false) if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_pbUpdate()
+  end
+
+  #####MODDED
+  def mouse_update_hover(was_clicked)
+    return if @sprites["commands"].nil?
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    if was_clicked
+      # Scroll
+      return if mouse_position[:Y] <= 350
+      return if mouse_position[:Y] >= 380
+      if (mouse_position[:X] > 48) && (mouse_position[:X] < 124)
+        scroll_dir = +1.0
+      elsif (mouse_position[:X] > 133) && (mouse_position[:X] < 209)
+        scroll_dir = -1.0
+      else
+        return
+      end
+      scroll_dist = (VISIBLEMOVES - 1) * scroll_dir
+      new_index = @sprites["commands"].index + scroll_dist
+      Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
+    else
+      # Select move
+      return if mouse_position[:X] >= 255
+      y_start = 84.0
+      return if mouse_position[:Y] <= y_start
+      return if mouse_position[:Y] >= 340
+      y_step = 64.0
+      selected = ((mouse_position[:Y] - y_start) / y_step).floor
+      new_index = @sprites["commands"].top_item + selected
+    end
+    new_index = [[new_index, 0].max, @moves.length - 1].min
+    if new_index != @sprites["commands"].index
+      @sprites["commands"].index = new_index
+      pbDrawMoveList
+    end
+  end
+  #####/MODDED
 end
 
 
@@ -2479,59 +2595,6 @@ class Scene_FieldNotes_Info
   end
 end
 
-#####################      18      ######################
-#Move relearner
-class MoveRelearnerScene
-  #####MODDED
-  def aMouseHover()
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return if mouse_position.nil?
-    
-    if Input.triggerex?(Input::LeftMouseKey)
-      if (mouse_position[:Y] > 350) && (mouse_position[:Y] < 380)
-        if (mouse_position[:X] > 48) && (mouse_position[:X] < 124)
-          iSel = @sprites["commands"].index+VISIBLEMOVES
-          iSel = @moves.length-1 if iSel >= @moves.length
-          @sprites["commands"].index = iSel if iSel != @sprites["commands"].index
-          Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-        elsif (mouse_position[:X] > 133) && (mouse_position[:X] < 209)
-          iSel = @sprites["commands"].index-VISIBLEMOVES
-          iSel = 0 if iSel < 0
-          @sprites["commands"].index = iSel if iSel != @sprites["commands"].index
-          Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-        end
-      end
-    else
-      if mouse_position[:X] < 255
-        iSel = -1
-        if mouse_position[:Y] > 80
-          if mouse_position[:Y] < 148
-            iSel = 0
-          elsif mouse_position[:Y] < 212
-            iSel = 1
-          elsif mouse_position[:Y] < 276
-            iSel = 2
-          elsif mouse_position[:Y] < 340
-            iSel = 3
-          end
-        end
-        
-        if iSel >= 0
-          iIndex = @sprites["commands"].top_item+iSel
-          if iIndex != @sprites["commands"].index
-            @sprites["commands"].index = iIndex
-          end
-        end
-      end
-    end
-  end
-  #####/MODDED
-  
-  def pbUpdate
-    aMouseHover() #####MODDED
-    pbUpdateSpriteHash(@sprites)
-  end
-end
 
 #####################      End      ######################
 

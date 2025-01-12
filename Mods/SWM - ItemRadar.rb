@@ -65,6 +65,7 @@ class Game_Screen
 	end
 	
 	def swm_updateRadar(skipEventInFrontOfPlayer = false)
+    return nil if $game_map.nil?
 		return nil if !swm_checkIsItemRadarOn?
     if !$swm_itemRadarMarkersLayerBitmap
       $swm_itemRadarMarkersLayerBitmap = AnimatedBitmap.new('patch/Mods/SWM - ItemRadar.png')
