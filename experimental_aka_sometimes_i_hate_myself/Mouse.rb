@@ -19,6 +19,7 @@ MOUSE_IGNORE_HOVER_ERRORS = false
 
 #####/MODDED
 
+if !defined?(Mouse::Sauiw::hover_callback_clear)
 module Mouse
   #####MODDED
   module Sauiw
@@ -98,8 +99,8 @@ module Mouse
 
     @callback_input = {}
     def self.set_callback(*callback_types)
-      callback_types.each do |callback_type|
-        @callback_input[callback_type] = true
+      callback_types.each do |itm|
+        @callback_input[itm] = true
       end
     end
     def self.check_and_reset_callback(*callback_types)
@@ -108,19 +109,26 @@ module Mouse
       return retval
     end
     def self.check_callback(*callback_types)
-      callback_types.each do |callback_type|
-        return true if @callback_input[callback_type]
+      callback_types.each do |itm|
+        return true if @callback_input[itm]
       end
       return false
     end
     def self.reset_callback(*callback_types)
-      callback_types.each do |callback_type|
-        @callback_input[callback_type] = false
+      callback_types.each do |itm|
+        @callback_input[itm] = false
       end
     end
     def self.return_true_or_nil(condition)
       return true if condition
       return nil
+    end
+
+    def self.clear_all_callbacks()
+      @callback_input = {}
+      @hover_callback_method = nil
+      @hover_callback_args = nil
+      @hover_callback_call_only_on_click = true
     end
 
     @mouse_offset_x = $joiplay ? -7 : 0 # On joyplay, there's an X offset of +7
@@ -135,6 +143,7 @@ module Mouse
     end
   end
   #####/MODDED
+end
 end
 
 module Input
@@ -196,10 +205,23 @@ module Input
   end
 end
 
+class PokemonLoad
+  if !defined?(mouse_old_pbStartLoadScreen)
+  alias :mouse_old_pbStartLoadScreen :pbStartLoadScreen
+end
+def pbStartLoadScreen(*args, **kwargs)
+  #####MODDED
+  Mouse::Sauiw::clear_all_callbacks()
+  #####/MODDED
+  return mouse_old_pbStartLoadScreen(*args, **kwargs)
+end
+end
+
 ########################################################
 ####################   Movement   ######################
 ########################################################
 
+if !defined?(Mouse::Sauiw::handle_movement)
 module Mouse
   #####MODDED
   module Sauiw
@@ -347,6 +369,7 @@ module Mouse
     end
   end
   #####/MODDED
+end
 end
 
 module Input
@@ -640,6 +663,7 @@ class Scene_Pokegear
     mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
     return if mouse_position.nil?
     line_sprite = @sprites['button0']
+    return if line_sprite.nil?
     line_start = line_sprite.x
     return if mouse_position[:X] <= line_start
     line_end = line_start + line_sprite.bitmap.rect.width
@@ -726,7 +750,7 @@ end
 # 6: x=15 y=14
 # TODO the hovered sprite does not animate
 
-
+if !defined?(Mouse::Sauiw::ticket_scene_handle_hover)
 module Mouse
   #####MODDED
   module Sauiw
@@ -779,6 +803,7 @@ module Mouse
     end
   end
   #####/MODDED
+end
 end
 
 
@@ -1180,6 +1205,7 @@ class PokemonScreen_Scene
       next if @party[i].nil?
       mon_sprite = @sprites["pokemon#{i}"]
       next if mon_sprite.nil?
+      next if mon_sprite.bitmap.nil?
       next if mouse_position[:X] <= mon_sprite.x
       next if mouse_position[:X] >= mon_sprite.x + mon_sprite.bitmap.width
       next if mouse_position[:Y] <= mon_sprite.y
@@ -1425,253 +1451,256 @@ class PokemonMartScene
 end
 
 
+########################################################
+#################   Pokemon summary   ##################
+########################################################
+
+
+class PokemonSummaryScene
+  if !defined?(mouse_old_pbUpdate)
+    alias :mouse_old_pbUpdate :pbUpdate
+  end
+  def pbUpdate(*args, **kwargs)
+    #####MODDED
+    mouse_update_hover_page()
+    #####/MODDED
+    return mouse_old_pbUpdate(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover(selmove, maxmove, moveToLearn)
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return nil if mouse_position.nil?
+    was_clicked = Input.triggerex?(Input::LeftMouseKey)
+    return nil if !was_clicked && !MOUSE_UPDATE_HOVERING
+    return nil if was_clicked && !@sprites["movesel"].visible
+    # Got the coordinates directly from the bitmap
+    return nil if selmove <= -2
+    return nil if mouse_position[:X] <= 240
+    return nil if mouse_position[:X] >= 490
+    selected = mouse_update_hover_get_hovered_icon_id(mouse_position)
+    return nil if selected.nil?
+    return nil if selected > maxmove
+    return nil if selected == selmove
+    Mouse::Sauiw::set_callback(:INTERCEPT_CLICK) if was_clicked
+    @sprites["movesel"].index = selected
+    newmove = (selected == 4) ? moveToLearn : @pokemon.moves[selected].move
+    drawSelectedMove(@pokemon, moveToLearn, newmove)
+    return selected
+  end
+
+  def mouse_update_hover_get_hovered_icon_id(mouse_position)
+    return nil if mouse_position[:Y] >= 365
+    return 4 if mouse_position[:Y] > 290
+    return nil if mouse_position[:Y] >= 280
+    return 3 if mouse_position[:Y] > 213
+    return 2 if mouse_position[:Y] > 149
+    return 1 if mouse_position[:Y] > 85
+    return 0 if mouse_position[:Y] > 20
+    return nil
+  end
+
+  def mouse_update_hover_page()
+    return if !@sprites["movesel"].nil? && @sprites["movesel"].visible
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    was_clicked = Input.triggerex?(Input::LeftMouseKey)
+    return if !was_clicked
+    Mouse::Sauiw::set_callback(:INTERCEPT_CLICK) if @page != 4 || !mouse_is_in_move_selection_area?(mouse_position)
+    # Got the coordinates directly from the bitmap
+    new_page = mouse_update_hover_get_hovered_page(mouse_position)
+    return if new_page.nil?
+    return if new_page == @page
+    @page = new_page
+    return drawPageOne(@pokemon) if @page == 0
+    return drawPageTwo(@pokemon) if @page == 1
+    return drawPageThree(@pokemon) if @page == 2
+    return drawPageFour(@pokemon) if @page == 3
+    return drawPageFive(@pokemon) if @page == 4
+  end
+
+  def mouse_update_hover_get_hovered_page(mouse_position)
+    return nil if mouse_position[:Y] <= 20
+    return nil if mouse_position[:Y] >= 42
+    # x_distance = 10
+    width = 36
+    x_start = 284
+    x_step = 46 # x_distance + width
+    new_page = ((mouse_position[:X] - x_start) / x_step).floor
+    return nil if new_page < 0
+    return nil if new_page > 4
+    x_difference = mouse_position[:X] - x_start - (new_page * x_step)
+    return nil if x_difference > width
+    return new_page
+    # return 0 if (mouse_position[:X] > 285) && (mouse_position[:X] < 320)
+    # return 1 if (mouse_position[:X] > 330) && (mouse_position[:X] < 366)
+    # return 2 if (mouse_position[:X] > 376) && (mouse_position[:X] < 412)
+    # return 3 if (mouse_position[:X] > 422) && (mouse_position[:X] < 458)
+    # return 4 if (mouse_position[:X] > 468) && (mouse_position[:X] < 502)
+    # return nil
+  end
+
+  def mouse_update_hover_move_selection(selmove, moves, zmoves)
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return selmove if mouse_position.nil?
+    return selmove if !mouse_is_in_move_selection_area?(mouse_position)
+    selected = mouse_update_hover_move_selection_get_hovered_move(mouse_position)
+    return selmove if selected >= @pokemon.numMoves
+    return selmove if selected == selmove
+    @sprites["movesel"].index = selected
+    if @zmovepage && !zmoves[selected].nil?
+      drawSelectedZeeMove(@pokemon, moves[selected].move, zmoves[selected].move)
+    else
+      drawSelectedMove(@pokemon, 0, moves[selected].move)
+    end
+    return selected
+  end
+
+  def mouse_is_in_move_selection_area?(mouse_position)
+    return false if mouse_position[:X] <= 245
+    return false if mouse_position[:X] >= 486
+    return false if mouse_position[:Y] <= 96
+    return false if mouse_position[:Y] >= 352
+    return true
+  end
+
+  def mouse_update_hover_move_selection_get_hovered_move(mouse_position)
+    return 3 if mouse_position[:Y] > 288
+    return 2 if mouse_position[:Y] > 224
+    return 1 if mouse_position[:Y] > 160
+    return 0
+  end
+  #####/MODDED
+
+  def pbChooseMoveToForget(moveToLearn)
+    selmove = 0
+    ret = 0
+    maxmove = (moveToLearn != 0) ? 4 : 3
+    lastread = nil
+    loop do
+      Graphics.update
+      Input.update
+      #####MODDED_OBLIGATORY
+      hovered = mouse_update_hover(selmove, maxmove, moveToLearn)
+      ret = selmove = hovered if !hovered.nil?
+      #####/MODDED_OBLIGATORY
+      pbUpdate
+      if lastread != selmove
+        if selmove == 4
+          readobj = PBMove.new(moveToLearn) if moveToLearn != 0
+        else
+          readobj = @pokemon.moves[selmove]
+        end
+        reading = (selmove == 4) ? moveToLearn : @pokemon.moves[selmove].move
+        tts(moveToString(reading, readobj))
+        lastread = selmove
+      end
+      if Input.trigger?(Input::B)
+        ret = 4
+        break
+      end
+      if Input.trigger?(Input::C)
+        break
+      end
+
+      if Input.trigger?(Input::DOWN)
+        selmove += 1
+        if selmove < 4 && selmove >= @pokemon.numMoves
+          selmove = (moveToLearn > 0) ? maxmove : 0
+        end
+        selmove = 0 if selmove > maxmove
+        @sprites["movesel"].index = selmove
+        newmove = (selmove == 4) ? moveToLearn : @pokemon.moves[selmove].move
+        drawSelectedMove(@pokemon, moveToLearn, newmove)
+        ret = selmove
+      end
+      if Input.trigger?(Input::UP)
+        selmove -= 1
+        selmove = maxmove if selmove < 0
+        if selmove < 4 && selmove >= @pokemon.numMoves
+          selmove = @pokemon.numMoves - 1
+        end
+        @sprites["movesel"].index = selmove
+        newmove = (selmove == 4) ? moveToLearn : @pokemon.moves[selmove].move
+        drawSelectedMove(@pokemon, moveToLearn, newmove)
+        ret = selmove
+      end
+    end
+    return (ret == 4) ? -1 : ret
+  end
+
+  def pbMoveSelection
+    @sprites["movesel"].visible = true
+    @sprites["movesel"].index = 0
+    selmove = 0
+    oldselmove = 0
+    switching = false
+    moves = @pokemon.moves # Remember this is a shallow copy
+    zmoves = @pokemon.zmoves # Remember this is a shallow copy
+    @zmovepage && !zmoves[selmove].nil? ? drawSelectedZeeMove(@pokemon, moves[selmove].move, zmoves[selmove].move) : drawSelectedMove(@pokemon, 0, moves[selmove].move)
+    loop do
+      Graphics.update
+      Input.update
+      pbUpdate
+      selmove = mouse_update_hover_move_selection(selmove, moves, zmoves) #####MODDED_OBLIGATORY
+      @sprites["movepresel"].z = @sprites["movesel"].z
+      @sprites["movepresel"].z += 1 if @sprites["movepresel"].index == @sprites["movesel"].index
+      if Input.trigger?(Input::B)
+        break if !switching
+
+        @sprites["movepresel"].visible = false
+        switching = false
+      end
+      if Input.trigger?(Input::C) && !(@pokemon.isShadow? rescue false)
+        if !switching
+          @sprites["movepresel"].index = selmove
+          oldselmove = selmove
+          @sprites["movepresel"].visible = true
+          switching = true
+        else
+          tmpmove = moves[oldselmove]
+          moves[oldselmove] = moves[selmove]
+          moves[selmove] = tmpmove
+          if !(zmoves.nil? || @pokemon.item == :INTERCEPTZ)
+            tmpmove = zmoves[oldselmove]
+            zmoves[oldselmove] = zmoves[selmove]
+            zmoves[selmove] = tmpmove
+          end
+          @sprites["movepresel"].visible = false
+          switching = false
+          @zmovepage && !zmoves[selmove].nil? ? drawSelectedZeeMove(@pokemon, moves[selmove].move, zmoves[selmove].move) : drawSelectedMove(@pokemon, 0, moves[selmove].move)
+        end
+      end
+      if Input.trigger?(Input::X) && zmoves != nil && zmoves.any? { |x| x != nil }
+        @zmovepage = !@zmovepage
+        @zmovepage && !zmoves[selmove].nil? ? drawSelectedZeeMove(@pokemon, moves[selmove].move, zmoves[selmove].move) : drawSelectedMove(@pokemon, 0, moves[selmove].move)
+      end
+      if Input.trigger?(Input::DOWN)
+        selmove += 1
+        selmove = 0 if selmove >= @pokemon.numMoves
+        @sprites["movesel"].index = selmove
+        pbPlayCursorSE()
+        @zmovepage && !zmoves[selmove].nil? ? drawSelectedZeeMove(@pokemon, moves[selmove].move, zmoves[selmove].move) : drawSelectedMove(@pokemon, 0, moves[selmove].move)
+      end
+      if Input.trigger?(Input::UP)
+        selmove -= 1
+        selmove = @pokemon.numMoves - 1 if selmove < 0
+        @sprites["movesel"].index = selmove
+        pbPlayCursorSE()
+        @zmovepage && !zmoves[selmove].nil? ? drawSelectedZeeMove(@pokemon, moves[selmove].move, zmoves[selmove].move) : drawSelectedMove(@pokemon, 0, moves[selmove].move)
+      end
+    end
+    @sprites["movesel"].visible = false
+  end
+end
+
+
 if false # TODO UPDATED UNTIL HERE
   ## TODO: check weather/time selection, field notes, pulse dex, pokegear->move tutor
 
 ########################################################
 ####################   Hovering   ######################
 ########################################################
-
-#####################      13      ######################
-#Pokemon summary
-
-class PokemonSummaryScene
-#Page
-  #####MODDED
-  def aMouseHover(selmove, maxmove, moveToLearn)
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return false if mouse_position.nil?
-    
-    bRetVal = false
-    
-    #Got the coordinates directly from the bitmap
-    if Input.triggerex?(Input::LeftMouseKey) && !@sprites["movesel"].visible
-      if (mouse_position[:Y] > 20) && (mouse_position[:Y] < 42)
-        if (mouse_position[:X] > 285) && (mouse_position[:X] < 320)
-          Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-          if @page != 0
-            @page = 0
-            drawPageOne(@pokemon)
-          end
-        elsif (mouse_position[:X] > 330) && (mouse_position[:X] < 366)
-          Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-          if @page != 1
-            @page = 1
-            drawPageTwo(@pokemon)
-          end
-        elsif (mouse_position[:X] > 376) && (mouse_position[:X] < 412)
-          Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-          if @page != 2
-            @page = 2
-            drawPageThree(@pokemon)
-          end
-        elsif (mouse_position[:X] > 422) && (mouse_position[:X] < 458)
-          Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-          if @page != 3
-            @page = 3
-            drawPageFour(@pokemon)
-          end
-        elsif (mouse_position[:X] > 468) && (mouse_position[:X] < 502)
-          Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-          if @page != 4
-            @page = 4
-            drawPageFive(@pokemon)
-          end
-        end
-      end
-    elsif selmove > -2
-      if (mouse_position[:X] > 240) && (mouse_position[:X] < 490)
-        iSel = -1
-        if mouse_position[:Y] < 280
-          if mouse_position[:Y] > 20
-            iSel = 0
-          end
-          if mouse_position[:Y] > 85
-            iSel = 1
-          end
-          if mouse_position[:Y] > 149
-            iSel = 2
-          end
-          if mouse_position[:Y] > 213
-            iSel = 3
-          end
-        elsif mouse_position[:Y] > 290
-          if mouse_position[:Y] < 365
-            iSel = 4
-          end
-        end
-        
-        if (iSel <= maxmove) && (iSel != selmove) && (iSel >= 0)
-          bRetVal = true
-          @sprites["movesel"].index = iSel
-          newmove=(iSel==4) ? moveToLearn : @pokemon.moves[iSel].id
-          drawSelectedMove(@pokemon, moveToLearn, newmove)
-        end
-      end
-    end
-    
-    return bRetVal
-  end
-  #####/MODDED
-
-  def pbUpdate(selmove = -2, maxmove = 3, moveToLearn = -1) #####MODDED, was def pbUpdate
-    bRetVal = aMouseHover(selmove, maxmove, moveToLearn) #####MODDED
-    pbUpdateSpriteHash(@sprites)
-    return bRetVal #####MODDED
-  end
-  
-  def pbChooseMoveToForget(moveToLearn)
-    selmove=0
-    ret=0
-    maxmove=(moveToLearn>0) ? 4 : 3
-    loop do
-      Graphics.update
-      Input.update
-      #####MODDED, was pbUpdate
-      #####MODDED
-      if pbUpdate(selmove, maxmove, moveToLearn)
-        selmove = @sprites["movesel"].index
-        ret = selmove
-      end
-      #####/MODDED
-      if Input.trigger?(Input::B)
-        ret=4
-        break
-      end
-      if Input.trigger?(Input::C)
-        break
-      end
-      if Input.trigger?(Input::DOWN)
-        selmove+=1
-        if selmove<4 && selmove>=@pokemon.numMoves
-          selmove=(moveToLearn>0) ? maxmove : 0
-        end
-        selmove=0 if selmove>maxmove
-        @sprites["movesel"].index=selmove
-        newmove=(selmove==4) ? moveToLearn : @pokemon.moves[selmove].id
-        drawSelectedMove(@pokemon,moveToLearn,newmove)
-        ret=selmove
-      end
-      if Input.trigger?(Input::UP)
-        selmove-=1
-        selmove=maxmove if selmove<0
-        if selmove<4 && selmove>=@pokemon.numMoves
-          selmove=@pokemon.numMoves-1
-        end
-        @sprites["movesel"].index=selmove
-        newmove=(selmove==4) ? moveToLearn : @pokemon.moves[selmove].id
-        drawSelectedMove(@pokemon,moveToLearn,newmove)
-        ret=selmove
-      end
-    end
-    return (ret==4) ? -1 : ret
-  end
-  
-#Moves
-  #####MODDED
-  def aMouseHoverMoves(rSel)
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return rSel if mouse_position.nil?
-    
-    iSel = rSel
-    
-    if (mouse_position[:X] > 245) && (mouse_position[:X] < 486)
-      if (mouse_position[:Y] > 96) && (mouse_position[:Y] < 352)
-        iTSel = 0
-        if mouse_position[:Y] > 160
-          iTSel = 1
-        end
-        if mouse_position[:Y] > 224
-          iTSel = 2
-        end
-        if mouse_position[:Y] > 288
-          iTSel = 3
-        end
-        
-        if (iTSel != rSel) && (iTSel < @pokemon.numMoves)
-          iSel = iTSel
-          @sprites["movesel"].index = iTSel
-          newmove = @pokemon.moves[iTSel].id
-          drawSelectedMove(@pokemon, 0, newmove)
-        end
-      end
-    end
-    
-    return iSel
-  end
-  #####/MODDED
-  
-  def pbMoveSelection
-    @sprites["movesel"].visible=true
-    @sprites["movesel"].index=0
-    selmove=0
-    oldselmove=0
-    switching=false
-    drawSelectedMove(@pokemon,0,@pokemon.moves[selmove].id)
-    loop do
-      Graphics.update
-      Input.update
-      pbUpdate
-      selmove = aMouseHoverMoves(selmove) #####MODDED
-      if @sprites["movepresel"].index==@sprites["movesel"].index
-        @sprites["movepresel"].z=@sprites["movesel"].z+1
-      else
-        @sprites["movepresel"].z=@sprites["movesel"].z
-      end
-      if Input.trigger?(Input::B)
-        break if !switching
-        @sprites["movepresel"].visible=false
-        switching=false
-      end
-      if Input.trigger?(Input::C)
-        if selmove==4
-          break if !switching
-          @sprites["movepresel"].visible=false
-          switching=false
-        else
-          if !(@pokemon.isShadow? rescue false)
-            if !switching
-              @sprites["movepresel"].index=selmove
-              oldselmove=selmove
-              @sprites["movepresel"].visible=true
-              switching=true
-            else
-              tmpmove=@pokemon.moves[oldselmove]
-              @pokemon.moves[oldselmove]=@pokemon.moves[selmove]
-              @pokemon.moves[selmove]=tmpmove
-              @sprites["movepresel"].visible=false
-              switching=false
-              drawSelectedMove(@pokemon,0,@pokemon.moves[selmove].id)
-            end
-          end
-        end
-      end
-      if Input.trigger?(Input::DOWN)
-        selmove+=1
-        selmove=0 if selmove<4 && selmove>=@pokemon.numMoves
-        selmove=0 if selmove>=4
-        selmove=4 if selmove<0
-        @sprites["movesel"].index=selmove
-        newmove=@pokemon.moves[selmove].id
-        pbPlayCursorSE()
-        drawSelectedMove(@pokemon,0,newmove)
-      end
-      if Input.trigger?(Input::UP)
-        selmove-=1
-        if selmove<4 && selmove>=@pokemon.numMoves
-          selmove=@pokemon.numMoves-1
-        end
-        selmove=0 if selmove>=4
-        selmove=@pokemon.numMoves-1 if selmove<0
-        @sprites["movesel"].index=selmove
-        newmove=@pokemon.moves[selmove].id
-        pbPlayCursorSE()
-        drawSelectedMove(@pokemon,0,newmove)
-      end
-    end 
-    @sprites["movesel"].visible=false
-  end
-end
 
 #####################      14      ######################
 #Tile puzzles
