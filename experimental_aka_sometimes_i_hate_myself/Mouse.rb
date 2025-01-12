@@ -1061,7 +1061,7 @@ class PokemonBag_Scene
     # Scroll down
     iw.index = [index + 1, @bag.pockets[iw.pocket].length].min
   end
-  
+
   def mouse_update_hover_sort(mouse_position, iw)
     # Got these coordinates directly from the background image
     return if mouse_position[:Y] <= 155
@@ -1359,81 +1359,78 @@ class PokemonStorageScene
 end
 
 
+########################################################
+####################   Buy menu   ######################
+########################################################
+
+
+class PokemonMartScene
+  # TODO the menu for actually buying the item is not fully functional
+  if !defined?(mouse_old_update)
+    alias :mouse_old_update :update
+  end
+  def update(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover))
+    mouse_update_hover() if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_update(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover()
+    return if !@sprites["helpwindow"].nil? && @sprites["helpwindow"].visible #An item is selected
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    iw = @sprites["itemwindow"]
+    return if iw.nil?
+    mouse_update_hover_item_list(mouse_position, iw)
+  end
+
+  def mouse_update_hover_item_list(mouse_position, iw)
+    border_x_halved = iw.borderX/2
+    return if mouse_position[:X] <= iw.x + border_x_halved
+    return if mouse_position[:X] >= iw.x + iw.width - border_x_halved
+    y_start = iw.y + iw.borderY
+    if mouse_position[:Y] < y_start
+      # Scroll up
+      iw.index = iw.top_item - 1 if iw.top_item > 0 && mouse_get_can_scroll?
+      return
+    end
+    items_max_per_page = iw.page_item_max
+    row_height = (iw.height - iw.borderY) / (items_max_per_page + 1)
+    visible_rows_above = ((mouse_position[:Y] - y_start)/ row_height).floor + 1
+    max_index = iw.itemCount - 1
+    index = [max_index, iw.top_item - 1 + visible_rows_above].min
+    if visible_rows_above < items_max_per_page
+      # The hovered item is selected; no need for scrolling
+      iw.index = index
+      return
+    end
+    return if mouse_position[:Y] >= y_start + (visible_rows_above + 1) * row_height
+    # Scroll down
+    iw.index = [index + 1, max_index].min if mouse_get_can_scroll?
+  end
+
+  def mouse_get_can_scroll?
+    $pokemon_mart_scene_scroll_cooldown = 0 if !defined?($pokemon_mart_scene_scroll_cooldown)
+    if $pokemon_mart_scene_scroll_cooldown > 0
+      $pokemon_mart_scene_scroll_cooldown -= 1
+      return false
+    end
+    $pokemon_mart_scene_scroll_cooldown = 9
+    return true
+  end
+  #####/MODDED
+end
+
+
 if false # TODO UPDATED UNTIL HERE
   ## TODO: check weather/time selection, field notes, pulse dex, pokegear->move tutor
 
 ########################################################
 ####################   Hovering   ######################
 ########################################################
-
-#####################      12      ######################
-#Vendors: buy menu
-
-class PokemonMartScene
-  #####MODDED
-  def mouse_update_hover_item_list(mouse_position, aIW)
-    iBorder = aIW.borderX/2
-    iX0 = aIW.x+iBorder
-    iX1 = aIW.x+aIW.width-iBorder
-    if (mouse_position[:X] > iX0) && (mouse_position[:X] < iX1)
-      iMax = aIW.itemCount-1
-      
-      iLimit = aIW.y+aIW.borderY
-      iScroll = 0
-      if mouse_position[:Y] < iLimit
-        iScroll = -1
-      else
-        iL = aIW.page_item_max
-        iH = (aIW.height-aIW.borderY)/(iL+1)
-        
-        iIndex = aIW.top_item-1
-        bFound = false
-        for i in 0...iL
-          iIndex = iIndex+1
-          iLimit = iLimit+iH
-          if mouse_position[:Y] < iLimit
-            bFound = true
-            break
-          end
-        end
-        if bFound
-          iIndex = iMax if iIndex > iMax
-          aIW.index = iIndex
-        else
-          iScroll = 1
-        end
-      end
-      if iScroll != 0
-        if iScroll < 0
-          aIW.index = aIW.top_item-1 if aIW.top_item > 0
-        else
-          #If we have iScroll > 0 then we defined iIndex and iLimit for sure; also, bFound is false
-          if mouse_position[:Y] < (iLimit+iH)
-            iIndex = iIndex+1
-            iIndex = iMax if iIndex > iMax
-            aIW.index = iIndex
-          end
-        end
-      end
-    end
-  end
-  
-  def aMouseHover()
-    return if @sprites["helpwindow"].visible #An item is selected
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return if mouse_position.nil?
-    
-    aIW = @sprites["itemwindow"]
-    mouse_update_hover_item_list(mouse_position, aIW)
-  end
-  #####/MODDED
-  
-  def update
-    aMouseHover() #####MODDED
-    pbUpdateSpriteHash(@sprites)
-    @subscene.update if @subscene
-  end
-end
 
 #####################      13      ######################
 #Pokemon summary
