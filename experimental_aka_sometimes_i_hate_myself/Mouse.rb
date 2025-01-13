@@ -94,6 +94,11 @@ module Mouse
           Mouse::Sauiw::check_and_reset_callback(:CLICK_RIGHT)
         )
       end
+      if button == Input::A
+        return Mouse::Sauiw::return_true_or_nil(
+          Mouse::Sauiw::check_and_reset_callback(:CLICK_A)
+        )
+      end
       return nil
     end
 
@@ -146,18 +151,6 @@ module Mouse
 end
 
 module Input
-  if !defined?(self.mouse_old_input_update)
-    class <<self
-      alias_method :mouse_old_input_update, :update
-    end
-  end
-  def self.update(*args, **kwargs)
-    #####MODDED
-    Mouse::Sauiw::reset_callback(:POKEDEX_SEARCH_DONE) # The pokedex search is kind of a special case
-    #####/MODDED
-    return self.mouse_old_input_update(*args, **kwargs)
-  end
-
   if !defined?(self.mouse_old_input_press?)
     class <<self
       alias_method :mouse_old_input_press?, :press?
@@ -421,26 +414,27 @@ class SpriteWindow_Selectable < SpriteWindow_Base
 
   #####MODDED
   def mouse_update_hover_parent
-    pokedex_search_index = 0 # The pokedex search is kind of a special case # TODO
-    return pokedex_search_index if Mouse::Sauiw::check_callback(:POKEDEX_SEARCH_DONE)
-    return pokedex_search_index if !defined?(@commands)
-    return pokedex_search_index if @commands.length <= 0
+    return if !defined?(@commands)
+    return if @commands.length <= 0
     mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return pokedex_search_index if mouse_position.nil?
+    return if mouse_position.nil?
     borderX_halved = borderX / 2
-    return pokedex_search_index if mouse_position[:X] <= (@x + borderX_halved)
-    return pokedex_search_index if mouse_position[:X] >= (@x + @width - borderX_halved)
+    return if mouse_position[:X] <= (@x + borderX_halved)
+    return if mouse_position[:X] >= (@x + @width - borderX_halved)
     line_first = top_row - 1
     line_last = line_first + page_row_max + 3
     index_new = line_first + ((mouse_position[:Y] - @y + (borderY / 2)) / rowHeight).floor
-    pokedex_search_index = index_new
     line_first = 0 if line_first < 0
-    line_last = @commands.length-1 if line_last >= @commands.length
-    if @index != index_new && !((index_new < line_first) || (index_new > line_last))
-      @index = index_new
-      update_cursor_rect
+    if Mouse::Sauiw::check_callback(:POKEDEX_SEARCH_CRAP)
+      return if index_new == 7
+    else
+      line_last = @commands.length-1 if line_last >= @commands.length
     end
-    return pokedex_search_index
+    return if @index == index_new
+    return if index_new < line_first
+    return if index_new > line_last
+    @index = index_new
+    update_cursor_rect
   end
   #####/MODDED
 end
@@ -1702,13 +1696,29 @@ class PokemonPokedexScene
   end
   def pbUpdate(is_page_1 = false)
     #####MODDED
-    if is_page_1
-      mouse_pokedex_handle_page_flip()
-    else
-      mouse_update_hover_dex()
+    if !Mouse::Sauiw::check_callback(:POKEDEX_SEARCH_CRAP)
+      if is_page_1
+        mouse_pokedex_handle_page_flip()
+      else
+        mouse_update_hover_dex()
+      end
     end
     #####/MODDED
     return mouse_old_pbUpdate()
+  end
+
+  if !defined?(mouse_old_pbDexSearch)
+    alias :mouse_old_pbDexSearch :pbDexSearch
+  end
+  def pbDexSearch(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::set_callback(:POKEDEX_SEARCH_CRAP)
+    #####/MODDED
+    retval = mouse_old_pbDexSearch(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::reset_callback(:POKEDEX_SEARCH_CRAP)
+    #####/MODDED
+    return retval
   end
 
   #####MODDED
@@ -1747,8 +1757,9 @@ class PokemonPokedexScene
     return if mouse_position[:X] <= 400
     return if mouse_position[:Y] <= 340
     return if mouse_position[:Y] >= 365
+    # pbDexSearch
     Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-    pbDexSearch
+    Mouse::Sauiw::set_callback(:CLICK_A)
   end
   #####/MODDED
 
@@ -1940,153 +1951,7 @@ end
 #       Mouse::Sauiw::set_callback(:POKEDEX_SEARCH_DONE)
 #     end
 #   end
-  
-#   def aMouseTabSelectDex(iPage)
-#     mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-#     return iPage if mouse_position.nil?
-    
-#     iNewPage = iPage
-#     if Input.triggerex?(Input::LeftMouseKey)
-#       #Got coordinates directly from the bitmap
-#       if mouse_position[:Y] < 25
-#         if mouse_position[:X] < 150
-#           if mouse_position[:X] > 35
-#             iNewPage = 1
-#           end
-#           if mouse_position[:X] > 70
-#             iNewPage = 2
-#           end
-#           if mouse_position[:X] > 110
-#             iNewPage = 3
-#           end
-#         end
-#       end
-#     end
-    
-#     return iNewPage
-#   end
-#   #####/MODDED
-  
-#   def pbUpdate(bDoHover = true) #####MODDED, was def pbUpdate
-#     aMouseHoverDex() if bDoHover #####MODDED
-#     pbUpdateSpriteHash(@sprites)
-#   end
-  
-#   def pbDexEntry(index)
-#     oldsprites=pbFadeOutAndHide(@sprites)
-#     pbChangeToDexEntry(@dexlist[index][0])
-#     pbFadeInAndShow(@sprites)
-#     curindex=index
-#     page=1
-#     newpage=0
-#     ret=0
-#     pbActivateWindow(@sprites,nil){
-#        loop do
-#          Graphics.update if page==1
-#          Input.update
-#          pbUpdate(false) #####MODDED, was pbUpdate
-#          newpage = aMouseTabSelectDex(newpage) #####MODDED
-#          if Input.trigger?(Input::B) || ret==1
-#            if page==1
-#              pbPlayCancelSE()
-#              pbFadeOutAndHide(@sprites)
-#            end
-#            break
-#          elsif Input.trigger?(Input::UP) || ret==8
-#            nextindex=-1
-#            i=curindex-1; loop do break unless i>=0
-#              if $Trainer.seen[@dexlist[i][0]]
-#                nextindex=i
-#                break
-#              end
-#              i-=1
-#            end
-#            if nextindex>=0
-#              curindex=nextindex
-#              newpage=page
-#            end
-#            pbPlayCursorSE() if newpage>1
-#          elsif Input.trigger?(Input::DOWN) || ret==2
-#            nextindex=-1
-#            for i in curindex+1...@dexlist.length
-#              if $Trainer.seen[@dexlist[i][0]]
-#                nextindex=i
-#                break
-#              end
-#            end
-#            if nextindex>=0
-#              curindex=nextindex
-#              newpage=page
-#            end
-#            pbPlayCursorSE() if newpage>1
-#          elsif Input.trigger?(Input::LEFT) || ret==4
-#            newpage=page-1 if page>1
-#            pbPlayCursorSE() if newpage>1
-#          elsif Input.trigger?(Input::RIGHT) || ret==6
-#            newpage=page+1 if page<3
-#            pbPlayCursorSE() if newpage>1
-#          elsif Input.trigger?(Input::A)
-#            pbPlayCry(@dexlist[curindex][0])
-#          end
-#          ret=0
-#          if newpage>0
-#            page=newpage
-#            newpage=0
-#            listlimits=0
-#            listlimits+=1 if curindex==0                 # At top of list
-#            listlimits+=2 if curindex==@dexlist.length-1 # At bottom of list
-#            case page
-#              when 1 # Show entry
-#                pbChangeToDexEntry(@dexlist[curindex][0])
-#              when 2 # Show nest
-#                region=-1
-#                if !DEXDEPENDSONLOCATION
-#                  dexnames=pbDexNames
-#                  if dexnames[pbGetSavePositionIndex].is_a?(Array)
-#                    region=dexnames[pbGetSavePositionIndex][1]
-#                  end
-#                end
-#                scene=PokemonNestMapScene.new
-#                screen=PokemonNestMap.new(scene)
-#                #####MODDED, was ret=screen.pbStartScreen(@dexlist[curindex][0],region,listlimits)
-#                #####MODDED
-#                  aRet = screen.pbStartScreen(@dexlist[curindex][0],region,listlimits)
-#                  ret = aRet[0]
-#                  newpage = aRet[1] if aRet[1] > 0
-#                #####/MODDED
-#              when 3 # Show forms
-#                scene=PokedexFormScene.new
-#                screen=PokedexForm.new(scene)
-#                #####MODDED, was ret=screen.pbStartScreen(@dexlist[curindex][0],listlimits)
-#                #####MODDED
-#                  aRet = screen.pbStartScreen(@dexlist[curindex][0],listlimits)
-#                  ret = aRet[0]
-#                  newpage = aRet[1] if aRet[1] > 0
-#                #####/MODDED
-#            end
-#          end
-#        end
-#     }
-#     $PokemonGlobal.pokedexIndex[pbGetSavePositionIndex]=curindex if !@searchResults
-#     @sprites["pokedex"].index=curindex
-#     @sprites["pokedex"].refresh
-#     iconspecies=@sprites["pokedex"].species
-#     iconspecies=0 if !$Trainer.seen[iconspecies]
-#     setIconBitmap(pbPokemonBitmapFile(iconspecies,false))
-#     if iconspecies>0
-#       @sprites["species"].text=_ISPRINTF("<ac>{1:s}</ac>",PBSpecies.getName(iconspecies))
-#     else
-#       @sprites["species"].text=_ISPRINTF("")
-#     end
-#     # Update the slider
-#     ycoord=62
-#     if @sprites["pokedex"].itemCount>1
-#       ycoord+=188.0 * @sprites["pokedex"].index/(@sprites["pokedex"].itemCount-1)
-#     end
-#     @sprites["slider"].y=ycoord
-#     pbFadeInAndShow(@sprites,oldsprites)
-#   end
-# end
+
 
 class PokemonNestMapScene
   if !defined?(mouse_old_pbUpdate)
