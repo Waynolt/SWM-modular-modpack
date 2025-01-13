@@ -141,13 +141,13 @@ module Mouse
       @hover_callback_call_only_on_click = true
     end
 
-    @mouse_offset_x = $joiplay ? -7 : 0 # On joyplay, there's an X offset of +7
     def self.get_cursor_position_on_screen() # As pixels, relative to the top-left corner of the screen
       mouse_position = Mouse.getMousePos(false) # array, x:0 y:1
       return nil if mouse_position.nil?
       # On desktop, Graphics.width = 512 and Graphics.height = 384
+      offset_x = $joiplay ? -7 : 0 # On joyplay, there's an X offset of +7
       return {
-        :X => mouse_position[0] + @mouse_offset_x,
+        :X => mouse_position[0] + offset_x,
         :Y => mouse_position[1]
       }
     end
