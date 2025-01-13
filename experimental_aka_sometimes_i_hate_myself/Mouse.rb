@@ -2300,12 +2300,55 @@ class RouletteScene
 end
 
 
-#####################      End      ######################
-
-if false # TODO UPDATED UNTIL HERE
-  ## TODO: check weather/time selection
-
 ########################################################
 ####################   Hovering   ######################
 ########################################################
+
+
+class Scene_TimeWeather
+  if !defined?(mouse_old_update)
+    alias :mouse_old_update :update
+  end
+  def update(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover))
+    mouse_update_hover() if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return self.mouse_old_update(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover()
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    tf = @sprites["timeFrame"]
+    return if tf.nil? || tf.bitmap.nil?
+    wf1 = @sprites["weatherFrame1"]
+    return if wf1.nil? || wf1.bitmap.nil?
+    wf2 = @sprites["weatherFrame2"]
+    return if wf2.nil? || wf2.bitmap.nil?
+    if mouse_is_in_rect(mouse_position, tf)
+      new_selection = 1
+    elsif mouse_is_in_rect(mouse_position, wf1)
+      new_selection = 2
+    elsif mouse_is_in_rect(mouse_position, wf2)
+      new_selection = 3
+    else
+      return
+    end
+    return if @selection == new_selection
+    @selection = new_selection
+  end
+
+  def mouse_is_in_rect(mouse_position, sprite)
+    return false if mouse_position[:X] < sprite.x
+    return false if mouse_position[:X] > sprite.x + sprite.bitmap.width
+    return false if mouse_position[:Y] < sprite.y
+    return false if mouse_position[:Y] > sprite.y + sprite.bitmap.height
+    return true
+  end
+  #####/MODDED
 end
+
+
+#####################      End      ######################
