@@ -2052,201 +2052,104 @@ class MiningGameScene
   #####/MODDED
 end
 
+
+########################################################
+##################   Tile puzzles   ####################
+########################################################
+
+
+class TilePuzzleScene
+  if !defined?(mouse_old_updateCursor)
+    alias :mouse_old_updateCursor :updateCursor
+  end
+  def updateCursor(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover))
+    mouse_update_hover() if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_updateCursor(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover()
+    return if @game == 3 # Hovering is just too clunky there
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    cursor = @sprites["cursor"]
+    return if cursor.nil?
+    board_height_total = @tileheight * @boardheight
+    y_start = ((Graphics.height - (board_height_total)) / 2.0) - 32
+    return if mouse_position[:Y] <= y_start
+    y_end = y_start + board_height_total
+    return if mouse_position[:Y] >= y_end
+    board_width_total = @tilewidth * @boardwidth
+    x_start = (Graphics.width - board_width_total) / 2
+    x_end = x_start + board_width_total
+    if (mouse_position[:X] > x_start) && (mouse_position[:X] < x_end)
+      new_x = ((mouse_position[:X] - x_start) / @tilewidth).floor
+      new_x = [[new_x, 0].max, @boardwidth - 1].min
+      new_y = ((mouse_position[:Y] - y_start) / @tileheight).floor
+      new_y = [[new_y, 0].max, @boardheight - 1].min
+      direction = nil
+      if Set[4, 5, 6].include?(@game) && cursor.selected
+        old_y = (cursor.position / @boardwidth).floor
+        old_x = cursor.position - old_y * @boardwidth
+        if old_y > new_y
+          diff_y = old_y - new_y
+          direction = 8
+        else
+          diff_y = new_y - old_y
+          direction = 2
+        end
+        if old_x > new_x
+          diff_x = old_x - new_x
+          direction = 4 if diff_y == 0
+        else
+          diff_x = new_x - old_x
+          direction = 6 if diff_y == 0
+        end
+        return if (diff_x > 0) && (diff_y > 0)
+        return if (diff_x + diff_y) > 1
+      end
+      new_position = new_x + new_y * @boardwidth
+      return if new_position == cursor.position
+      if !direction.nil? && cursor.selected
+        pbSwapTiles(direction)
+      else
+        cursor.position = new_position
+      end
+      return
+    end
+    return if !Set[1, 2].include?(@game)
+    #Extended tiles
+    x_start_ext = (x_start - (@tilewidth * (@boardwidth / 2).ceil)) / 2 - 10
+    x_end_ext = x_start_ext + (@tilewidth * 2)
+    new_y = ((mouse_position[:Y] - y_start) / @tileheight).floor
+    if (mouse_position[:X] > x_start_ext) && (mouse_position[:X] < x_end_ext)
+      new_x = ((mouse_position[:X] - x_start_ext) / @tilewidth).floor
+    else
+      x_start_ext_2 = Graphics.width - x_start_ext - @tilewidth * (@boardwidth - 2)
+      return if mouse_position[:X] <= x_start_ext_2
+      x_end_ext_2 = x_start_ext_2 + (@tilewidth * 2)
+      return if mouse_position[:X] >= x_end_ext_2
+      new_x = @boardwidth - 1 - ((x_end_ext_2 - mouse_position[:X]) / @tilewidth).floor
+    end
+    new_x = [[new_x, 0].max, @boardwidth - 1].min
+    new_y = [[new_y, 0].max, @boardheight - 1].min
+    new_position = new_x + @boardwidth * (new_y + @boardheight)
+    return if new_position == cursor.position
+    cursor.position = new_position
+  end
+  #####/MODDED
+end
+
+
 if false # TODO UPDATED UNTIL HERE
   ## TODO: check weather/time selection, field notes, pulse dex, pokegear->move tutor
 
 ########################################################
 ####################   Hovering   ######################
 ########################################################
-
-#####################      14      ######################
-#Tile puzzles
-
-class TilePuzzleScene
-  #####MODDED
-  def aMouseHover()
-    return if @game == 3 #Hovering is just too clunky there
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return if mouse_position.nil?
-    
-    aCursor = @sprites["cursor"]
-    
-    iY0 = ((Graphics.height-(@tileheight*@boardheight))/2)-32
-    iY1 = iY0+@tileheight*@boardheight
-    if (mouse_position[:Y] > iY0) && (mouse_position[:Y] < iY1)
-      iX0 = (Graphics.width-(@tilewidth*@boardwidth))/2
-      iX1 = iX0+@tilewidth*@boardwidth
-      if (mouse_position[:X] > iX0) && (mouse_position[:X] < iX1)
-        bNearOnly = ((@game > 3) && (@game <= 6))
-        
-        iPosX = mouse_position[:X]-iX0
-        iPosY = mouse_position[:Y]-iY0
-        
-        iX = (iPosX/@tilewidth).floor
-        iY = (iPosY/@tileheight).floor
-        
-        iX = 0 if iX <0
-        iX = @boardwidth-1 if iX >= @boardwidth
-        iY = 0 if iY <0
-        iY = @boardheight-1 if iY >= @boardheight
-        
-        iDir = 0
-        if bNearOnly && aCursor.selected
-          iOldY = (aCursor.position/@boardwidth).floor
-          iOldX = aCursor.position-iOldY*@boardwidth
-          
-          if iOldY > iY
-            iDY = iOldY-iY
-            iDir = 8
-          else
-            iDY = iY-iOldY
-            iDir = 2
-          end
-          if iOldX > iX
-            iDX = iOldX-iX
-            iDir = 4 if iDY == 0
-          else
-            iDX = iX-iOldX
-            iDir = 6 if iDY == 0
-          end
-          
-          bContinue = (((iDY == 0) && (iDX < 2)) || ((iDX == 0) && (iDY < 2)))
-        else
-          bContinue = true
-        end
-        
-        if bContinue
-          iSel = iX+iY*@boardwidth
-          
-          if iSel != aCursor.position
-            if (iDir > 0) && aCursor.selected
-              pbSwapTiles(iDir)
-            else
-              aCursor.position = iSel
-            end
-          end
-        end
-      elsif (@game == 1) || (@game == 2) # -> bNearOnly = false
-        #Extended tiles
-        iXE0 = (iX0-(@tilewidth*(@boardwidth/2).ceil))/2-10
-        iXE1 = iXE0+(@tilewidth*2)
-        
-        bContinue = false
-        if (mouse_position[:X] > iXE0) && (mouse_position[:X] < iXE1)
-          iPosY = mouse_position[:Y]-iY0
-          iY = (iPosY/@tileheight).floor
-          
-          iPosX = mouse_position[:X]-iXE0
-          iX = (iPosX/@tilewidth).floor
-          
-          iX = 0 if iX <0
-          iX = @boardwidth-1 if iX >= @boardwidth
-          iY = 0 if iY <0
-          iY = @boardheight-1 if iY >= @boardheight
-          
-          bContinue = true
-        else
-          iXE2 = Graphics.width-iXE0-@tilewidth*(@boardwidth-2)
-          iXE3 = iXE2+(@tilewidth*2)
-          if (mouse_position[:X] > iXE2) && (mouse_position[:X] < iXE3)
-            iPosY = mouse_position[:Y]-iY0
-            iY = (iPosY/@tileheight).floor
-            
-            iPosX = iXE3-mouse_position[:X]
-            iX = @boardwidth-1-(iPosX/@tilewidth).floor
-            
-            iX = 0 if iX <0
-            iX = @boardwidth-1 if iX >= @boardwidth
-            iY = 0 if iY <0
-            iY = @boardheight-1 if iY >= @boardheight
-            
-            bContinue = true
-          end
-        end
-        
-        if bContinue
-          iSel = iX+@boardwidth*(iY+@boardheight)
-          
-          if iSel != aCursor.position
-            aCursor.position = iSel
-          end
-        end
-      end
-    end
-  end
-  #####/MODDED
-  
-  def updateCursor
-    aMouseHover() #####MODDED
-    arrows=[]
-    for i in 0...4
-      arrows.push(pbCanMoveInDir?(@sprites["cursor"].position,(i+1)*2,@game==6))
-    end
-    @sprites["cursor"].arrows=arrows
-  end
-  
-  def pbMain
-    loop do
-      update
-      Graphics.update
-      Input.update
-      # Check end conditions
-      if pbCheckWin
-        @sprites["cursor"].visible=false
-        if @game==3
-          extratile=@sprites["tile#{@boardwidth*@boardheight-1}"]
-          extratile.bitmap.clear
-          extratile.bitmap.blt(0,0,@tilebitmap.bitmap,
-             Rect.new(@tilewidth*(@boardwidth-1),@tileheight*(@boardheight-1),
-             @tilewidth,@tileheight))
-          extratile.opacity=0
-          32.times do
-            extratile.opacity+=8
-            Graphics.update
-            Input.update
-          end
-        else
-          pbWait(20)
-        end
-        loop do
-          Graphics.update
-          Input.update
-          break if Input.trigger?(Input::C) || Input.trigger?(Input::B)
-        end
-        return true
-      end
-      # Input
-      @sprites["cursor"].selected=(Input.press?(Input::C) && @game>=3 && @game<=6)
-      dir=0
-      dir=2 if Input.trigger?(Input::DOWN) || Input.repeat?(Input::DOWN)
-      dir=4 if Input.trigger?(Input::LEFT) || Input.repeat?(Input::LEFT)
-      dir=6 if Input.trigger?(Input::RIGHT) || Input.repeat?(Input::RIGHT)
-      dir=8 if Input.trigger?(Input::UP) || Input.repeat?(Input::UP)
-      if dir>0
-        if @game==3 || (@game!=3 && @sprites["cursor"].selected)
-          if pbCanMoveInDir?(@sprites["cursor"].position,dir,true)
-            pbSEPlay("Choose")
-            pbSwapTiles(dir)
-          end
-        else
-          if pbCanMoveInDir?(@sprites["cursor"].position,dir,false)
-            pbSEPlay("Choose")
-            @sprites["cursor"].position=pbMoveCursor(@sprites["cursor"].position,dir)
-          end
-        end
-      elsif (@game==1 || @game==2) && Input.trigger?(Input::C)
-        pbGrabTile(@sprites["cursor"].position)
-      elsif (@game==2 && Input.trigger?(Input::F5)) ||
-            (@game==5 && Input.trigger?(Input::F5)) ||
-            (@game==7 && Input.trigger?(Input::C))
-        pbRotateTile(@sprites["cursor"].position)
-      elsif Input.trigger?(Input::B)
-        return false
-      end
-      @sprites["cursor"].selected=(Input.pressex?(Input::LeftMouseKey) && @game>3 && @game<=6) #####MODDED
-    end
-  end
-end
 
 #####################      17      ######################
 #Voltorb flip
