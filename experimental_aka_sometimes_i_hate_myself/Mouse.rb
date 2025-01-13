@@ -1981,6 +1981,77 @@ class PokedexFormScene
   end
 end
 
+
+########################################################
+#####################   Mining   #######################
+########################################################
+
+
+class MiningGameScene
+  if !defined?(mouse_old_update)
+    alias :mouse_old_update :update
+  end
+  def update(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover))
+    mouse_update_hover() if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_update(*args, **kwargs)
+  end
+
+  if !defined?(mouse_old_pbHit)
+    alias :mouse_old_pbHit :pbHit
+  end
+  def pbHit(*args, **kwargs)
+    #####MODDED
+    return if mouse_update_intercept_click()
+    #####/MODDED
+    return mouse_old_pbHit(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover()
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    #Got coordinates from the unmodded script and directly from the bitmap
+    return if mouse_position[:X] >= 430
+    cursor = @sprites["cursor"]
+    return if cursor.nil?
+    new_x = ((mouse_position[:X] - 0.0) / 32.0).floor
+    return if new_x < 0
+    return if new_x >= BOARDWIDTH
+    new_y = ((mouse_position[:Y] - 64.0) / 32.0).floor
+    return if new_y < 0
+    return if new_y >= BOARDHEIGHT
+    new_position = new_x + new_y * BOARDWIDTH
+    return if new_position == cursor.position
+    cursor.position = new_position
+  end
+
+  def mouse_update_intercept_click()
+    return false if !Input.triggerex?(Input::LeftMouseKey)
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return false if mouse_position.nil?
+    return false if mouse_position[:X] < 430
+    return false if mouse_position[:X] >= 505
+    cursor = @sprites["cursor"]
+    return false if cursor.nil?
+    tool = @sprites["tool"]
+    return false if tool.nil?
+    if (mouse_position[:Y] > 105) && (mouse_position[:Y] < 215)
+      new_mode = 1
+    elsif (mouse_position[:Y] > 250) && (mouse_position[:Y] < 355)
+      new_mode = 0
+    else
+      return false
+    end
+    return true if new_mode == cursor.mode
+    Mouse::Sauiw::set_callback(:CLICK_A)
+    return true
+  end
+  #####/MODDED
+end
+
 if false # TODO UPDATED UNTIL HERE
   ## TODO: check weather/time selection, field notes, pulse dex, pokegear->move tutor
 
@@ -2173,135 +2244,6 @@ class TilePuzzleScene
         return false
       end
       @sprites["cursor"].selected=(Input.pressex?(Input::LeftMouseKey) && @game>3 && @game<=6) #####MODDED
-    end
-  end
-end
-
-#####################      15      ######################
-#Mining
-
-class MiningGameScene
-  #####MODDED
-  def aInterceptClick()
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return false if mouse_position.nil?
-    
-    bRetVal = false
-    
-    #Got coordinates from the unmodded script and directly from the bitmap
-    if Input.triggerex?(Input::LeftMouseKey)
-      if (mouse_position[:X] > 430)
-        if (mouse_position[:X] < 505)
-          aCursor = @sprites["cursor"]
-          aTool = @sprites["tool"]
-          
-          newmode=2
-          if (mouse_position[:Y] > 105) && (mouse_position[:Y] < 215)
-            newmode=1
-          elsif (mouse_position[:Y] > 250) && (mouse_position[:Y] < 355)
-            newmode=0
-          end
-        
-          if newmode < 2
-            bRetVal = true
-            
-            if newmode != aCursor.mode
-              aCursor.mode=newmode
-              aTool.src_rect.set(newmode*68,0,68,100)
-              aTool.y=254-144*newmode
-            end
-          end
-        end
-      end
-    end
-    
-    return bRetVal
-  end
-  
-  def aMouseHover()
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return if mouse_position.nil?
-    
-    #Got coordinates from the unmodded script and directly from the bitmap
-    if (mouse_position[:X] < 430)
-      aCursor = @sprites["cursor"]
-      iTileL = 32
-      
-      iX0 = 0
-      iY0 = 64
-      iX = ((mouse_position[:X]-iX0)/iTileL).floor
-      iY = ((mouse_position[:Y]-iY0)/iTileL).floor
-      
-      if (iX >= 0) && (iX < BOARDWIDTH)
-        if (iY >= 0) && (iY < BOARDHEIGHT)
-          iNewPos = iX+iY*BOARDWIDTH
-          
-          if iNewPos != aCursor.position
-            aCursor.position = iNewPos
-          end
-        end
-      end
-    end
-  end
-  #####/MODDED
-  
-  def update
-    aMouseHover() #####MODDED
-    pbUpdateSpriteHash(@sprites)
-  end
-  
-  def pbHit
-    return if aInterceptClick() #####MODDED
-    hittype=0
-    position=@sprites["cursor"].position
-    if @sprites["cursor"].mode==1   # Hammer
-      pattern=[1,2,1,
-               2,2,2,
-               1,2,1]
-      @sprites["crack"].hits+=2 if !($DEBUG && Input.press?(Input::CTRL))
-    else                            # Pick
-      pattern=[0,1,0,
-               1,2,1,
-               0,1,0]
-      @sprites["crack"].hits+=1 if !($DEBUG && Input.press?(Input::CTRL))
-    end
-    #####MODDED
-    #Ensure compatibility with MiningForRich
-    if defined?(aPayToMine())
-      aPayToMine()
-    end
-    #####/MODDED
-    if @sprites["tile#{position}"].layer<=pattern[4] && pbIsIronThere?(position)
-      @sprites["tile#{position}"].layer-=pattern[4]
-      pbSEPlay("MiningIron")
-      hittype=2
-    else
-      for i in 0..2
-        ytile=i-1+position/BOARDWIDTH
-        next if ytile<0 || ytile>=BOARDHEIGHT
-        for j in 0..2
-          xtile=j-1+position%BOARDWIDTH
-          next if xtile<0 || xtile>=BOARDWIDTH
-          @sprites["tile#{xtile+ytile*BOARDWIDTH}"].layer-=pattern[j+i*3]
-        end
-      end
-      if @sprites["cursor"].mode==1   # Hammer
-        pbSEPlay("MiningHammer")
-      else
-        pbSEPlay("MiningPick")
-      end
-    end
-    update
-    Graphics.update
-    hititem=(@sprites["tile#{position}"].layer==0 && pbIsItemThere?(position))
-    hittype=1 if hititem
-    @sprites["cursor"].animate(hittype)
-    revealed=pbCheckRevealed
-    if revealed.length>0
-      pbSEPlay("MiningFullyRevealItem")
-      pbFlashItems(revealed)
-    elsif hititem
-      pbSEPlay("MiningRevealItem")
     end
   end
 end
