@@ -84,6 +84,11 @@ module Mouse
         end
         return retval
       end
+      if button == Input::DOWN
+        return Mouse::Sauiw::return_true_or_nil(
+          Mouse::Sauiw::check_and_reset_callback(:CLICK_DOWN)
+        )
+      end
       if button == Input::LEFT
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:CLICK_LEFT)
@@ -2144,72 +2149,163 @@ class TilePuzzleScene
 end
 
 
+########################################################
+##################   Voltorb flip   ####################
+########################################################
+
+
+class VoltorbFlip
+  if !defined?(mouse_old_getInput)
+    alias :mouse_old_getInput :getInput
+  end
+  def getInput(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover), [true])
+    mouse_update_hover(false) if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return mouse_old_getInput(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover(was_clicked)
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    return if mouse_update_hover_clicked_buttons(mouse_position, was_clicked)
+    # Values copied from the unmodded script
+    tile_size = 64.0
+    return if mouse_position[:X] < (@squares[0][0] - tile_size / 4)
+    # Hover tile
+    cursor = @sprites["cursor"]
+    return if cursor.nil?
+    new_x = ((mouse_position[:X] - @squares[0][0]) / tile_size).floor
+    return if new_x < 0
+    return if new_x >= 5
+    new_y = ((mouse_position[:Y] - @squares[0][1]) / tile_size).floor
+    return if new_y < 0
+    return if new_y >= 5
+    return if (@index[0] == new_x) && (@index[1] == new_y)
+    @index[0] = new_x
+    @index[1] = new_y
+    cursor.x = new_x * tile_size
+    cursor.y = new_y * tile_size
+  end
+
+  def mouse_update_hover_clicked_buttons(mouse_position, was_clicked)
+    return false if !was_clicked
+    # Values copied from the picture
+    return false if mouse_position[:X] < 10
+    return false if mouse_position[:X] > 118
+    if (mouse_position[:Y] > 196) && (mouse_position[:Y] < 320)
+      # Click Memo
+      Mouse::Sauiw::set_callback(:CLICK_A)
+    elsif (mouse_position[:Y] > 328) && (mouse_position[:Y] < 376)
+      # Exit
+      Mouse::Sauiw::set_callback(:EXIT_SCREEN)
+    else
+      return false
+    end
+    Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
+    return true
+  end
+  #####/MODDED
+end
+
+
+########################################################
+##################   Slot machine   ####################
+########################################################
+
+
+class SlotMachineScene
+  if !defined?(mouse_old_update)
+    alias :mouse_old_update :update
+  end
+  def update(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover))
+    #####/MODDED
+    return mouse_old_update(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover()
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
+    if mouse_position[:Y] < 32
+      # Top bar
+      if mouse_position[:X] > 395
+        # Exit
+        Mouse::Sauiw::set_callback(:EXIT_SCREEN) if !@gameRunning
+      elsif mouse_position[:X] > 275
+        # Stop
+        Mouse::Sauiw::reset_callback(:INTERCEPT_CLICK) if @gameRunning
+      elsif mouse_position[:X] > 155
+        # Wager
+        Mouse::Sauiw::set_callback(:CLICK_DOWN) if !@gameRunning
+      end
+    elsif (mouse_position[:Y] > 100) && (mouse_position[:Y] < 200)
+      if @gameRunning
+        # Stop
+        Mouse::Sauiw::reset_callback(:INTERCEPT_CLICK) if @gameRunning
+      else
+        # Wager
+        Mouse::Sauiw::set_callback(:CLICK_DOWN) if !@gameRunning
+      end
+    elsif (mouse_position[:Y] > 200) && (mouse_position[:Y] < 300)
+      # Start
+      Mouse::Sauiw::reset_callback(:INTERCEPT_CLICK) if !@gameRunning && (@wager > 0)
+    end
+  end
+  #####/MODDED
+end
+
+
+########################################################
+####################   Roulette   ######################
+########################################################
+
+
+class RouletteScene
+  if !defined?(mouse_old_update)
+    alias :mouse_old_update :update
+  end
+  def update(*args, **kwargs)
+    #####MODDED
+    Mouse::Sauiw::hover_callback_set(method(:mouse_update_hover))
+    mouse_update_hover() if MOUSE_UPDATE_HOVERING
+    #####/MODDED
+    return self.mouse_old_update(*args, **kwargs)
+  end
+
+  #####MODDED
+  def mouse_update_hover()
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
+    return if mouse_position.nil?
+    table = @sprites["table"]
+    return if table.nil?
+    header = 48.0
+    start = 45.0
+    step = 48.0
+    x_adj = mouse_position[:X] - table.x
+    new_x = x_adj <= header ? 0 : ((x_adj - start) / step).ceil
+    y_adj = mouse_position[:Y] - table.y
+    new_y = y_adj <= header ? 0 : ((y_adj - start) / step).ceil
+    return if (new_x == 0) && (new_y == 0)
+    return if (@cursor.indexX == new_x) && (@cursor.indexY == new_y)
+    @cursor.setIndex(new_x, new_y)
+    pbDrawMultiplier
+  end
+  #####/MODDED
+end
+
+
+#####################      End      ######################
+
 if false # TODO UPDATED UNTIL HERE
-  ## TODO: check weather/time selection, field notes, pulse dex, pokegear->move tutor
+  ## TODO: check weather/time selection
 
 ########################################################
 ####################   Hovering   ######################
 ########################################################
-
-#####################      17      ######################
-#Voltorb flip
-
-class VoltorbFlip
-  #####MODDED
-  def aMouseHover()
-    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
-    return if mouse_position.nil?
-    
-    #Values copied from the unmodded script
-    iSquareL = 64
-    
-    if mouse_position[:X] < (@squares[0][0]-iSquareL/4)
-      #Click Memo
-      if Input.triggerex?(Input::LeftMouseKey)
-        if (mouse_position[:Y] > @squares[15][1]) && (mouse_position[:Y] < (@squares[15][1]+(2*iSquareL)))
-          Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
-          @sprites["cursor"].bitmap.clear
-          if @cursor[0][3]==0 # If in normal mode
-            @cursor[0]=[@directory+"cursor",128,0,64,0,64,64]
-            @sprites["memo"].visible=true
-          else # Mark mode
-            @cursor[0]=[@directory+"cursor",128,0,0,0,64,64]
-            @sprites["memo"].visible=false
-          end
-        end
-      end
-    else
-      #Hover tile
-      aCursor = @sprites["cursor"]
-      
-      iX = ((mouse_position[:X]-@squares[0][0])/iSquareL).floor
-      iY = ((mouse_position[:Y]-@squares[0][1])/iSquareL).floor
-      
-      if (iX >= 0) && (iX < 5)
-        if (iY >= 0) && (iY < 5)
-          @index[0] = iX
-          @index[1] = iY
-          aCursor.x = iX*iSquareL
-          aCursor.y = iY*iSquareL
-        end
-      end
-    end
-  end
-  #####/MODDED
-  
-  def pbScene
-    loop do
-      Graphics.update
-      Input.update
-      aMouseHover() #####MODDED
-      getInput
-      if @quit
-        break
-      end
-    end
-  end
-end
-
-#####################      End      ######################
-
 end
