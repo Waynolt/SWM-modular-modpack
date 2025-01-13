@@ -1929,30 +1929,6 @@ class PokemonPokedexScene
   end
 end
 
-# class PokemonPokedexScene
-#   #####MODDED
-#   def aMouseHoverDex()
-#     if @sprites["searchbg"].visible
-#       #We're in the search scene
-#       if @sprites["auxlist"].commands.length > 0
-#         @sprites["auxlist"].aMouseHover(true)
-#       else
-#         aSL = @sprites["searchlist"]
-        
-#         iInd = aSL.aMouseHover(false)
-        
-#         if (iInd > 0) && (iInd < 10)
-#           if iInd != 7
-#             aSL.index = iInd
-#           end
-#         end
-#       end
-      
-#       Mouse::Sauiw::set_callback(:POKEDEX_SEARCH_DONE)
-#     end
-#   end
-
-
 class PokemonNestMapScene
   if !defined?(mouse_old_pbUpdate)
     alias :mouse_old_pbUpdate :pbUpdate
