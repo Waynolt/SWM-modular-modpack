@@ -135,7 +135,9 @@ module Mouse
     end
 
     def self.clear_all_callbacks()
-      @callback_input = {}
+      @callback_input.each_key do |itm|
+        @callback_input[itm] = false
+      end
       @hover_callback_method = nil
       @hover_callback_args = nil
       @hover_callback_call_only_on_click = true
