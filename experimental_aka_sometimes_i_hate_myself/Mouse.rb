@@ -14,7 +14,7 @@
 #####MODDED
 MOUSE_UPDATE_HOVERING = true
 MOUSE_IGNORE_HOVER_ERRORS = false
-MOUSE_TRACK_CURSOR = false
+MOUSE_TRACK_CURSOR = true
 
 #####/MODDED
 
@@ -65,7 +65,7 @@ module Mouse
         )
       end
       if button == Input::C # Action
-        Mouse::Sauiw::get_cursor_position_on_screen() if MOUSE_TRACK_CURSOR
+        Mouse::Sauiw::get_cursor_position_on_screen() if MOUSE_TRACK_CURSOR && !Mouse::Sauiw::check_callback(:INITIALIZING)
         if $game_player && $scene && $scene.is_a?(Scene_Map) && !pbIsFaded?
           # We're in a Scene_map
           movement = Mouse::Sauiw::handle_movement()
@@ -146,9 +146,6 @@ module Mouse
     def self.get_cursor_position_on_screen() # As pixels, relative to the top-left corner of the screen
       mouse_position = Mouse.getMousePos(false) # array, x:0 y:1
       return nil if mouse_position.nil?
-      # On desktop, Graphics.width = 512 and Graphics.height = 384
-      # adj_percent = $joiplay ? 0.775 : 1.0
-      # TODO Is it the border??? It eskews the tracking on desktop too like it does on JoyPlay
       if $Settings.border
         adj_flat_x = BORDERWIDTH
         adj_flat_y = BORDERHEIGHT
@@ -156,36 +153,138 @@ module Mouse
         adj_flat_x = 0.0
         adj_flat_y = 0.0
       end
+      real_x = mouse_position[0] - adj_flat_x
+      real_y = mouse_position[1] - adj_flat_y
+      if $joiplay || true # TODO
+        # In Joiplay, the bottom right corner of the screen is accurate while the top left is the most inaccurate
+        # Hence, we'll get how inaccurate that is and then we'll scale that value by the distance from the bottom right corner
+        joiplay_adj_percent_x, joiplay_adj_percent_y, joiplay_adj_flat_x, joiplay_adj_flat_y = Mouse::Sauiw::PercentCursorCoordinatesAdjustment::get_values()
+        real_x *= joiplay_adj_percent_x
+        real_x += joiplay_adj_flat_x
+        real_y *= joiplay_adj_percent_y
+        real_y += joiplay_adj_flat_y
+      end
       retval = {
-        :X => mouse_position[0] - adj_flat_x, # * adj_percent,
-        :Y => mouse_position[1] - adj_flat_y  # * adj_percent
+        :X => real_x,
+        :Y => real_y
       }
       Mouse::Sauiw::track_cursor(retval)
       return retval
     end
+
+    module PercentCursorCoordinatesAdjustment
+      def self.get_values
+        return $mouse_percent_cursor_coordinates_adjustment if defined?($mouse_percent_cursor_coordinates_adjustment)
+        Mouse::Sauiw::set_callback(:INITIALIZING)
+        $mouse_percent_cursor_coordinates_adjustment = self.evaluate_and_return_values()
+        Mouse::Sauiw::reset_callback(:INITIALIZING)
+        return $mouse_percent_cursor_coordinates_adjustment
+      end
+
+      def self.evaluate_and_return_values
+        values = self.try_loading_values()
+        return values if !values.nil?
+        # All formulas are derived from real_dist_from_right_border = (Graphics.width.to_f - real_x) * adj_percent_x
+        # On desktop, Graphics.width = 512 and Graphics.height = 384
+        topleft_x, topleft_y = self.get_topleft_coordinates()
+        percent_x = (Graphics.width - topleft_x) / 512.0
+        percent_y = (Graphics.height - topleft_y) / 384.0
+        flat_x = Graphics.width.to_f * (1 - percent_x)
+        flat_y = Graphics.height.to_f * (1 - percent_y)
+        values = percent_x, percent_y, flat_x, flat_y
+        # self.try_saving_values(values) # TODO
+        return values
+      end
+
+      def self.get_topleft_coordinates
+        # The messages assume that we are in Joiplay
+        target = Mouse::Sauiw::ensure_and_get_image_sprite('Graphics/Icons/item873.png', 'init_target')
+        target.x = 0 # - target.bitmap.width / 2
+        target.y = 0 # - target.bitmap.height / 2
+        Kernel.pbMessage(_INTL('The touch input system needs some calibration - just this once, hopefully'))
+        Kernel.pbMessage(_INTL('Please keep the top-left corner of the game window, where the red arrow is pointing, pressed for a few seconds'))
+        coords_x = []
+        coords_y = []
+        Graphics.update
+        Input.update
+        sleep(2.0)
+        loop do
+          sleep(0.5)
+          Graphics.update
+          Input.update
+          next if !Input.pressex?(Input::LeftMouseKey)
+          mouse_position = Mouse.getMousePos(true) # array, x:0 y:1
+          next if mouse_position.nil?
+          if $Settings.border
+            adj_flat_x = BORDERWIDTH
+            adj_flat_y = BORDERHEIGHT
+          else
+            adj_flat_x = 0.0
+            adj_flat_y = 0.0
+          end
+          coords_x.push(mouse_position[0] - adj_flat_x)
+          coords_y.push(mouse_position[1] - adj_flat_y)
+          break if coords_x.length >= 12
+        end
+        average_x = coords_x.inject{ |sum, el| sum + el }.to_f / coords_x.length
+        average_y = coords_y.inject{ |sum, el| sum + el }.to_f / coords_y.length
+        Kernel.pbMessage(_INTL('The touch input system has been initialized'))
+        target.dispose()
+        return average_x, average_y
+      end
+      
+      def self.try_loading_values
+        filename = self.get_filename()
+        return nil if !safeExists?(filename)
+        retval = nil
+        File.open(filename).each do |line|
+          line_stripped = line.strip()
+          if line_stripped && (line_stripped != '')
+            line_split = line_stripped.split('|') 
+            retval = line_split[0].to_f, line_split[1].to_f, line_split[2].to_f, line_split[3].to_f
+          end
+        end
+        return retval
+      end
+      
+      def self.try_saving_values(values)
+        filename = self.get_filename()
+        return nil if safeExists?(filename) # No need to redo this
+        joined_values = values.join('|')
+        File.open(filename, 'wb') { |f|
+          f << "#{joined_values}\n"
+        }
+      end
+
+      def self.get_filename()
+        return RTP.getSaveFileName('mouse_percent_cursor_coordinates_adjustment.txt')
+      end
+    end
+
     if MOUSE_TRACK_CURSOR
       def self.track_cursor(mouse_position)
-        button = Mouse::Sauiw::ensure_and_get_button('Graphics/Icons/fieldPlus.png')
-        button.x = mouse_position[:X] - button.bitmap.width / 2
-        button.y = mouse_position[:Y] - button.bitmap.height / 2
-      end
-      @extra_buttons = {}
-      def self.ensure_and_get_button(image_path)
-        return @extra_buttons[image_path] if !@extra_buttons[image_path].nil? && !@extra_buttons[image_path].disposed?
-        new_bitmap = AnimatedBitmap.new(image_path)
-        new_sprite = Sprite.new(nil)
-        new_sprite.bitmap = Bitmap.new(new_bitmap.bitmap.width, new_bitmap.bitmap.height)
-        # new_sprite.x = x
-        # new_sprite.y = y
-        new_sprite.z = 9998
-        new_sprite.visible = true
-        new_sprite.bitmap.blt(0, 0, new_bitmap.bitmap, new_bitmap.bitmap.rect)
-        @extra_buttons[image_path] = new_sprite
-        return @extra_buttons[image_path]
+        cursor = Mouse::Sauiw::ensure_and_get_image_sprite('Graphics/Icons/fieldPlus.png')
+        cursor.x = mouse_position[:X] - cursor.bitmap.width / 2
+        cursor.y = mouse_position[:Y] - cursor.bitmap.height / 2
       end
     else
       def self.track_cursor(mouse_position)
       end
+    end
+    @extra_sprites = {}
+    def self.ensure_and_get_image_sprite(image_path, image_key = nil)
+      key = image_key.nil? ? image_path : image_key
+      return @extra_sprites[key] if !@extra_sprites[key].nil? && !@extra_sprites[key].disposed?
+      new_bitmap = AnimatedBitmap.new(image_path)
+      new_sprite = Sprite.new(nil)
+      new_sprite.bitmap = Bitmap.new(new_bitmap.bitmap.width, new_bitmap.bitmap.height)
+      # new_sprite.x = x
+      # new_sprite.y = y
+      new_sprite.z = 9998
+      new_sprite.visible = true
+      new_sprite.bitmap.blt(0, 0, new_bitmap.bitmap, new_bitmap.bitmap.rect)
+      @extra_sprites[key] = new_sprite
+      return @extra_sprites[key]
     end
   end
   #####/MODDED
@@ -456,6 +555,7 @@ class SpriteWindow_Selectable < SpriteWindow_Base
 
   #####MODDED
   def mouse_update_hover_parent
+    return if Mouse::Sauiw::check_callback(:INITIALIZING)
     return if !defined?(@commands)
     return if @commands.length <= 0
     mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
