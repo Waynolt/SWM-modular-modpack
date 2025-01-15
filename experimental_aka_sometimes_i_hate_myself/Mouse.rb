@@ -16,6 +16,7 @@ require 'set'
 
 MOUSE_UPDATE_HOVERING = true
 MOUSE_IGNORE_HOVER_ERRORS = false
+MOUSE_TRACK_CURSOR = false
 
 #####/MODDED
 
@@ -66,6 +67,7 @@ module Mouse
         )
       end
       if button == Input::C # Action
+        Mouse::Sauiw::get_cursor_position_on_screen() if MOUSE_TRACK_CURSOR
         if $game_player && $scene && $scene.is_a?(Scene_Map) && !pbIsFaded?
           # We're in a Scene_map
           movement = Mouse::Sauiw::handle_movement()
@@ -145,11 +147,45 @@ module Mouse
       mouse_position = Mouse.getMousePos(false) # array, x:0 y:1
       return nil if mouse_position.nil?
       # On desktop, Graphics.width = 512 and Graphics.height = 384
-      offset_x = $joiplay ? -7 : 0 # On joyplay, there's an X offset of +7
-      return {
-        :X => mouse_position[0] + offset_x,
-        :Y => mouse_position[1]
+      # adj_percent = $joiplay ? 0.775 : 1.0
+      # TODO Is it the border??? It eskews the tracking on desktop too like it does on JoyPlay
+      if $Settings.border
+        adj_flat_x = BORDERWIDTH
+        adj_flat_y = BORDERHEIGHT
+      else
+        adj_flat_x = 0.0
+        adj_flat_y = 0.0
+      end
+      retval = {
+        :X => mouse_position[0] - adj_flat_x, # * adj_percent,
+        :Y => mouse_position[1] - adj_flat_y  # * adj_percent
       }
+      Mouse::Sauiw::track_cursor(retval)
+      return retval
+    end
+    if MOUSE_TRACK_CURSOR
+      def self.track_cursor(mouse_position)
+        button = Mouse::Sauiw::ensure_and_get_button('Graphics/Icons/fieldPlus.png')
+        button.x = mouse_position[:X] - button.bitmap.width / 2
+        button.y = mouse_position[:Y] - button.bitmap.height / 2
+      end
+      @extra_buttons = {}
+      def self.ensure_and_get_button(image_path)
+        return @extra_buttons[image_path] if !@extra_buttons[image_path].nil? && !@extra_buttons[image_path].disposed?
+        new_bitmap = AnimatedBitmap.new(image_path)
+        new_sprite = Sprite.new(nil)
+        new_sprite.bitmap = Bitmap.new(new_bitmap.bitmap.width, new_bitmap.bitmap.height)
+        # new_sprite.x = x
+        # new_sprite.y = y
+        new_sprite.z = 9998
+        new_sprite.visible = true
+        new_sprite.bitmap.blt(0, 0, new_bitmap.bitmap, new_bitmap.bitmap.rect)
+        @extra_buttons[image_path] = new_sprite
+        return @extra_buttons[image_path]
+      end
+    else
+      def self.track_cursor(mouse_position)
+      end
     end
   end
   #####/MODDED
@@ -226,6 +262,7 @@ module Mouse
     @movement_player_last_y = nil
     @movement_player_step_taken_cooldown = 10
     def self.handle_movement()
+      # TODO revert to the old pathfinding system? It was easier to have fine control over the movement
       Mouse::Sauiw::reset_callback(
         :MOVEMENT_DOWN,
         :MOVEMENT_LEFT,
@@ -1348,12 +1385,6 @@ class PokemonSummaryScene
     x_difference = mouse_position[:X] - x_start - (new_page * x_step)
     return nil if x_difference > width
     return new_page
-    # return 0 if (mouse_position[:X] > 285) && (mouse_position[:X] < 320)
-    # return 1 if (mouse_position[:X] > 330) && (mouse_position[:X] < 366)
-    # return 2 if (mouse_position[:X] > 376) && (mouse_position[:X] < 412)
-    # return 3 if (mouse_position[:X] > 422) && (mouse_position[:X] < 458)
-    # return 4 if (mouse_position[:X] > 468) && (mouse_position[:X] < 502)
-    # return nil
   end
 
   def mouse_update_hover_move_selection(selmove, moves, zmoves)
