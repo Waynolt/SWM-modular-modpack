@@ -12,8 +12,6 @@
 
 
 #####MODDED
-require 'set'
-
 MOUSE_UPDATE_HOVERING = true
 MOUSE_IGNORE_HOVER_ERRORS = false
 MOUSE_TRACK_CURSOR = false
@@ -1023,7 +1021,7 @@ class PokemonScreen_Scene
     return if mouse_position.nil?
     hw = @sprites["helpwindow"]
     return if hw.nil?
-    return if !Set[
+    return if ![
       # "Choose a pokemon", or "Move to where?", etc
       'Choo',
       'Move',
@@ -2127,7 +2125,7 @@ class TilePuzzleScene
       new_y = ((mouse_position[:Y] - y_start) / @tileheight).floor
       new_y = [[new_y, 0].max, @boardheight - 1].min
       direction = nil
-      if Set[4, 5, 6].include?(@game) && cursor.selected
+      if [4, 5, 6].include?(@game) && cursor.selected
         old_y = (cursor.position / @boardwidth).floor
         old_x = cursor.position - old_y * @boardwidth
         if old_y > new_y
@@ -2156,7 +2154,7 @@ class TilePuzzleScene
       end
       return
     end
-    return if !Set[1, 2].include?(@game)
+    return if ![1, 2].include?(@game)
     #Extended tiles
     x_start_ext = (x_start - (@tilewidth * (@boardwidth / 2).ceil)) / 2 - 10
     x_end_ext = x_start_ext + (@tilewidth * 2)
