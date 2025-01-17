@@ -14,7 +14,7 @@
 #####MODDED
 MOUSE_UPDATE_HOVERING = true
 MOUSE_IGNORE_HOVER_ERRORS = false
-MOUSE_TRACK_CURSOR = true
+MOUSE_TRACK_CURSOR = false
 
 #####/MODDED
 
@@ -65,7 +65,7 @@ module Mouse
         )
       end
       if button == Input::C # Action
-        Mouse::Sauiw::get_cursor_position_on_screen() if MOUSE_TRACK_CURSOR && !Mouse::Sauiw::check_callback(:INITIALIZING)
+        Mouse::Sauiw::get_cursor_position_on_screen() if !defined?($mouse_percent_cursor_coordinates_adjustment) && !Mouse::Sauiw::check_callback(:INITIALIZING)
         if $game_player && $scene && $scene.is_a?(Scene_Map) && !pbIsFaded?
           # We're in a Scene_map
           movement = Mouse::Sauiw::handle_movement()
@@ -155,14 +155,16 @@ module Mouse
       end
       real_x = mouse_position[0] - adj_flat_x
       real_y = mouse_position[1] - adj_flat_y
-      if $joiplay || true # TODO
-        # In Joiplay, the bottom right corner of the screen is accurate while the top left is the most inaccurate
+      if $joiplay
+        # In Joiplay, the bottom right corner of the screen is almost accurate while the top left is the most inaccurate
         # Hence, we'll get how inaccurate that is and then we'll scale that value by the distance from the bottom right corner
         joiplay_adj_percent_x, joiplay_adj_percent_y, joiplay_adj_flat_x, joiplay_adj_flat_y = Mouse::Sauiw::PercentCursorCoordinatesAdjustment::get_values()
         real_x *= joiplay_adj_percent_x
         real_x += joiplay_adj_flat_x
         real_y *= joiplay_adj_percent_y
         real_y += joiplay_adj_flat_y
+      elsif !defined?($mouse_percent_cursor_coordinates_adjustment)
+        $mouse_percent_cursor_coordinates_adjustment = 1.0, 1.0, 0.0, 0.0
       end
       retval = {
         :X => real_x,
@@ -184,25 +186,46 @@ module Mouse
       def self.evaluate_and_return_values
         values = self.try_loading_values()
         return values if !values.nil?
-        # All formulas are derived from real_dist_from_right_border = (Graphics.width.to_f - real_x) * adj_percent_x
+        # The messages assume that we are in Joiplay
+        Kernel.pbMessage(_INTL('The touch input system needs some calibration - just this once, hopefully'))
+        sprite = Mouse::Sauiw::ensure_and_get_image_sprite('Graphics/Icons/fieldPlus.png', 'init_nw')
+        real = {
+          :nw => {
+            :x => sprite.bitmap.width / 2,
+            :y => sprite.bitmap.height / 2
+          },
+          :se => {
+            :x => Graphics.width - sprite.bitmap.width / 2,
+            :y => Graphics.height - sprite.bitmap.height / 2
+          }
+        }
+        detected = {:nw => {}, :se => {}}
+        detected[:nw][:x], detected[:nw][:y] = self.get_real_touch_coordinates(sprite, real[:nw][:x] - sprite.bitmap.width / 2, real[:nw][:y] - sprite.bitmap.height / 2)
+        detected[:se][:x], detected[:se][:y] = self.get_real_touch_coordinates(sprite, real[:se][:x] - sprite.bitmap.width / 2, real[:se][:y] - sprite.bitmap.height / 2)
+        sprite.dispose()
         # On desktop, Graphics.width = 512 and Graphics.height = 384
-        topleft_x, topleft_y = self.get_topleft_coordinates()
-        percent_x = (Graphics.width - topleft_x) / 512.0
-        percent_y = (Graphics.height - topleft_y) / 384.0
-        flat_x = Graphics.width.to_f * (1 - percent_x)
-        flat_y = Graphics.height.to_f * (1 - percent_y)
+        # Calculations for the final formula:
+        #   full_detected_width = (detected[:se][:x] - detected[:nw][:x]).to_f
+        #   full_real_width = (Graphics.width - sprite.bitmap.width).to_f
+        #   real_x - real[:nw][:x] = (detected_x - detected[:nw][:x]) * full_real_width / full_detected_width
+        #   real_x = detected_x * full_real_width / full_detected_width - detected[:nw][:x] * full_real_width / full_detected_width + real[:nw][:x]
+        #   percent_x = full_real_width / full_detected_width
+        #   flat_x = real[:nw][:x] - detected[:nw][:x] * percent_x
+        #   real_x = detected_x * percent_x + flat_x
+        percent_x = (Graphics.width - sprite.bitmap.width).to_f / (detected[:se][:x] - detected[:nw][:x]).to_f
+        percent_y = (Graphics.height - sprite.bitmap.height).to_f / (detected[:se][:y] - detected[:nw][:y]).to_f
+        flat_x = real[:nw][:x] - detected[:nw][:x] * percent_x
+        flat_y = real[:nw][:y] - detected[:nw][:y] * percent_y
         values = percent_x, percent_y, flat_x, flat_y
-        # self.try_saving_values(values) # TODO
+        self.try_saving_values(values)
+        Kernel.pbMessage(_INTL('The touch input system has been initialized!'))
         return values
       end
 
-      def self.get_topleft_coordinates
-        # The messages assume that we are in Joiplay
-        target = Mouse::Sauiw::ensure_and_get_image_sprite('Graphics/Icons/item873.png', 'init_target')
-        target.x = 0 # - target.bitmap.width / 2
-        target.y = 0 # - target.bitmap.height / 2
-        Kernel.pbMessage(_INTL('The touch input system needs some calibration - just this once, hopefully'))
-        Kernel.pbMessage(_INTL('Please keep the top-left corner of the game window, where the red arrow is pointing, pressed for a few seconds'))
+      def self.get_real_touch_coordinates(sprite, x, y)
+        Kernel.pbMessage(_INTL('Please keep the green icon pressed for a few seconds'))
+        sprite.x = x
+        sprite.y = y
         coords_x = []
         coords_y = []
         Graphics.update
@@ -228,8 +251,6 @@ module Mouse
         end
         average_x = coords_x.inject{ |sum, el| sum + el }.to_f / coords_x.length
         average_y = coords_y.inject{ |sum, el| sum + el }.to_f / coords_y.length
-        Kernel.pbMessage(_INTL('The touch input system has been initialized'))
-        target.dispose()
         return average_x, average_y
       end
       
@@ -2411,6 +2432,7 @@ class RouletteScene
 
   #####MODDED
   def mouse_update_hover()
+    return if @centralizeRoulette
     mouse_position = Mouse::Sauiw::get_cursor_position_on_screen()
     return if mouse_position.nil?
     table = @sprites["table"]
@@ -2419,9 +2441,9 @@ class RouletteScene
     start = 45.0
     step = 48.0
     x_adj = mouse_position[:X] - table.x
-    new_x = x_adj <= header ? 0 : ((x_adj - start) / step).ceil
+    new_x = [x_adj <= header ? 0 : ((x_adj - start) / step).ceil, 4].min
     y_adj = mouse_position[:Y] - table.y
-    new_y = y_adj <= header ? 0 : ((y_adj - start) / step).ceil
+    new_y = [y_adj <= header ? 0 : ((y_adj - start) / step).ceil, 3].min
     return if (new_x == 0) && (new_y == 0)
     return if (@cursor.indexX == new_x) && (@cursor.indexY == new_y)
     @cursor.setIndex(new_x, new_y)
