@@ -75,7 +75,7 @@ module Mouse
           return nil if Mouse::Sauiw::get_cursor_position_on_screen().nil?
           Mouse::Sauiw::hover_callback_call(true)
           Mouse::Sauiw::hover_callback_clear()
-          return nil if Mouse::Sauiw::check_and_reset_callback(:INTERCEPT_CLICK) || Mouse::Sauiw::check_callback(:SHOW_CONTROL_BAR) # :INTERCEPT_CLICK prevents the click from being interpreted as an activation
+          return nil if Mouse::Sauiw::check_and_reset_callback(:INTERCEPT_CLICK) || Mouse::Sauiw::check_callback(:SHOW_CONTROL_BAR, :INITIALIZING) # :INTERCEPT_CLICK prevents the click from being interpreted as an activation
         else
           Mouse::Sauiw::hover_callback_call(false)
         end
@@ -85,27 +85,27 @@ module Mouse
     end
 
     def self.check_fake_input(button, original_method)
-      if button == Input::DOWN
+      if defined?(Input::DOWN) && button == Input::DOWN
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:CLICK_DOWN)
         )
       end
-      if button == Input::LEFT
+      if defined?(Input::LEFT) && button == Input::LEFT
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:CLICK_LEFT)
         )
       end
-      if button == Input::RIGHT
+      if defined?(Input::RIGHT) && button == Input::RIGHT
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:CLICK_RIGHT)
         )
       end
-      if button == Input::A
+      if defined?(Input::A) && button == Input::A
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:CLICK_A)
         )
       end
-      if button == Input::B # Back/Menu
+      if defined?(Input::B) && button == Input::B # Back/Menu
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:EXIT_SCREEN) \
           || (original_method == :trigger && Input.triggerex?(Input::RightMouseKey)) \
@@ -113,22 +113,22 @@ module Mouse
           || (original_method == :repeat && Input.mouse_old_input_repeat?(Input::RightMouseKey))
         )
       end
-      # if button == Input::Z
+      # if defined?(Input::Z) && button == Input::Z
       #   return Mouse::Sauiw::return_true_or_nil(
       #     Mouse::Sauiw::check_and_reset_callback(:CLICK_Z)
       #   )
       # end
-      if button == Input::E
+      if defined?(Input::E) && button == Input::E
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:CLICK_E)
         )
       end
-      if button == Input::X
+      if defined?(Input::X) && button == Input::X
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:CLICK_X)
         )
       end
-      if button == Input::Y
+      if defined?(Input::Y) && button == Input::Y
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:CLICK_Y)
         )
@@ -173,6 +173,7 @@ module Mouse
     end
 
     def self.get_cursor_position_on_screen(allow_offscreen = false) # As pixels, relative to the top-left corner of the screen
+      return nil if Mouse::Sauiw::check_callback(:INITIALIZING)
       mouse_position = Mouse.getMousePos(allow_offscreen) # array, x:0 y:1
       return nil if mouse_position.nil?
       if $Settings.border
