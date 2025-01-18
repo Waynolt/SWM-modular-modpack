@@ -55,15 +55,11 @@ module Mouse
       end
     end
 
-    def self.handle_callbacks(button)
+    def self.handle_trigger_callbacks(button)
       # This method handles mouse clicks by setting the appropriate flag in the checking function and translating it
       # into the appropriate keypress on input checking
-      if button == Input::B # Back/Menu
-        return Mouse::Sauiw::return_true_or_nil(
-          Mouse::Sauiw::check_and_reset_callback(:EXIT_SCREEN) \
-          || Input.triggerex?(Input::RightMouseKey) # Just in case self.press? missed this
-        )
-      end
+      retval = Mouse::Sauiw::check_fake_input(button, :trigger)
+      return retval if !retval.nil?
       if button == Input::C # Action
         Mouse::Sauiw::get_cursor_position_on_screen() if !defined?($mouse_percent_cursor_coordinates_adjustment) && !Mouse::Sauiw::check_callback(:INITIALIZING)
         if $game_player && $scene && $scene.is_a?(Scene_Map) && !pbIsFaded?
@@ -76,14 +72,19 @@ module Mouse
           Input.triggerex?(Input::LeftMouseKey)
         )
         if retval
+          return nil if Mouse::Sauiw::get_cursor_position_on_screen().nil?
           Mouse::Sauiw::hover_callback_call(true)
           Mouse::Sauiw::hover_callback_clear()
-          return nil if Mouse::Sauiw::check_and_reset_callback(:INTERCEPT_CLICK) # :INTERCEPT_CLICK prevents the click from being interpreted as an activation
+          return nil if Mouse::Sauiw::check_and_reset_callback(:INTERCEPT_CLICK) || Mouse::Sauiw::check_callback(:SHOW_CONTROL_BAR) # :INTERCEPT_CLICK prevents the click from being interpreted as an activation
         else
           Mouse::Sauiw::hover_callback_call(false)
         end
         return retval
       end
+      return nil
+    end
+
+    def self.check_fake_input(button, original_method)
       if button == Input::DOWN
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:CLICK_DOWN)
@@ -102,6 +103,34 @@ module Mouse
       if button == Input::A
         return Mouse::Sauiw::return_true_or_nil(
           Mouse::Sauiw::check_and_reset_callback(:CLICK_A)
+        )
+      end
+      if button == Input::B # Back/Menu
+        return Mouse::Sauiw::return_true_or_nil(
+          Mouse::Sauiw::check_and_reset_callback(:EXIT_SCREEN) \
+          || (original_method == :trigger && Input.triggerex?(Input::RightMouseKey)) \
+          || (original_method == :press && Input.pressex?(Input::RightMouseKey)) \
+          || (original_method == :repeat && Input.mouse_old_input_repeat?(Input::RightMouseKey))
+        )
+      end
+      # if button == Input::Z
+      #   return Mouse::Sauiw::return_true_or_nil(
+      #     Mouse::Sauiw::check_and_reset_callback(:CLICK_Z)
+      #   )
+      # end
+      if button == Input::E
+        return Mouse::Sauiw::return_true_or_nil(
+          Mouse::Sauiw::check_and_reset_callback(:CLICK_E)
+        )
+      end
+      if button == Input::X
+        return Mouse::Sauiw::return_true_or_nil(
+          Mouse::Sauiw::check_and_reset_callback(:CLICK_X)
+        )
+      end
+      if button == Input::Y
+        return Mouse::Sauiw::return_true_or_nil(
+          Mouse::Sauiw::check_and_reset_callback(:CLICK_Y)
         )
       end
       return nil
@@ -143,8 +172,8 @@ module Mouse
       @hover_callback_call_only_on_click = true
     end
 
-    def self.get_cursor_position_on_screen() # As pixels, relative to the top-left corner of the screen
-      mouse_position = Mouse.getMousePos(false) # array, x:0 y:1
+    def self.get_cursor_position_on_screen(allow_offscreen = false) # As pixels, relative to the top-left corner of the screen
+      mouse_position = Mouse.getMousePos(allow_offscreen) # array, x:0 y:1
       return nil if mouse_position.nil?
       if $Settings.border
         adj_flat_x = BORDERWIDTH
@@ -170,8 +199,17 @@ module Mouse
         :X => real_x,
         :Y => real_y
       }
+      return nil if !Mouse::Sauiw::is_mouse_in_game_area?(retval)
       Mouse::Sauiw::track_cursor(retval)
       return retval
+    end
+
+    def self.is_mouse_in_game_area?(mouse_position)
+      return false if mouse_position[:X] < 0
+      return false if mouse_position[:X] > Graphics.width
+      return false if mouse_position[:Y] < 0
+      return false if mouse_position[:Y] > Graphics.height
+      return true
     end
 
     module PercentCursorCoordinatesAdjustment
@@ -301,12 +339,95 @@ module Mouse
       new_sprite.bitmap = Bitmap.new(new_bitmap.bitmap.width, new_bitmap.bitmap.height)
       # new_sprite.x = x
       # new_sprite.y = y
-      new_sprite.z = 9998
+      new_sprite.z = 999998
       new_sprite.visible = true
       new_sprite.bitmap.blt(0, 0, new_bitmap.bitmap, new_bitmap.bitmap.rect)
       @extra_sprites[key] = new_sprite
       return @extra_sprites[key]
     end
+  end
+  #####/MODDED
+end
+
+module Graphics
+  if !defined?(self.mouse_old_graphics_update)
+    class <<self
+      alias_method :mouse_old_graphics_update, :update
+    end
+  end
+  def self.update(*args, **kwargs)
+    return self.mouse_old_graphics_update(*args, **kwargs) if Mouse::Sauiw::check_callback(:INITIALIZING)
+    #####MODDED
+    # The purpose of this is to allow using other keys even in environments like Joiplay, where that's usually
+    #  impossible without the gamepad overlay
+    Graphics.mouse_handle_other_keys()
+    #####/MODDED
+    return self.mouse_old_graphics_update(*args, **kwargs)
+  end
+
+  #####MODDED
+  def self.mouse_handle_other_keys
+    return if !Input.triggerex?(Input::LeftMouseKey) && !Input.repeatex?(Input::LeftMouseKey)
+    mouse_position = Mouse::Sauiw::get_cursor_position_on_screen(true)
+    Graphics.mouse_show_control_bar(mouse_position)
+    Graphics.mouse_handle_control_bar_buttons(mouse_position)
+  end
+
+  def self.mouse_show_control_bar(mouse_position)
+    # return if Mouse::Sauiw::check_callback(:MESSAGE_SHOWING)
+    return if !mouse_position.nil? && Mouse::Sauiw::is_mouse_in_game_area?(mouse_position)
+    # Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
+    if Mouse::Sauiw::check_callback(:SHOW_CONTROL_BAR)
+      Mouse::Sauiw::reset_callback(:SHOW_CONTROL_BAR)
+      Graphics.mouse_get_control_bar_sprite().visible = false
+    else
+      Mouse::Sauiw::set_callback(:SHOW_CONTROL_BAR)
+      Graphics.mouse_get_control_bar_sprite().visible = true
+    end
+  end
+
+  def self.mouse_get_control_bar_sprite
+    return Mouse::Sauiw::ensure_and_get_image_sprite('patch/Mods/Mouse_control_bar.png')
+  end
+
+  def self.mouse_handle_control_bar_buttons(mouse_position)
+    return if mouse_position.nil?
+    return if !Mouse::Sauiw::check_callback(:SHOW_CONTROL_BAR)
+    output = Graphics.mouse_get_clicked_input(mouse_position)
+    return if output.nil?
+    Mouse::Sauiw::set_callback(:INTERCEPT_CLICK)
+    if Mouse::Sauiw::check_callback(:SHOW_CONTROL_BAR) && output != :EXIT_SCREEN
+      Mouse::Sauiw::reset_callback(:SHOW_CONTROL_BAR)
+      Graphics.mouse_get_control_bar_sprite().visible = false
+    end
+    if output == :QUICKSAVE
+      if !Mouse::Sauiw::check_callback(:INTERCEPT_SAVE) && $game_player && $scene && $scene.is_a?(Scene_Map) && !pbIsFaded?
+        Mouse::Sauiw::set_callback(:INTERCEPT_SAVE)
+        $scene.quickSave()
+        Mouse::Sauiw::reset_callback(:INTERCEPT_SAVE)
+      end
+      return
+    end
+    return Mouse::Sauiw::set_callback(output)
+  end
+
+  def self.mouse_get_clicked_input(mouse_position)
+    bar = Graphics.mouse_get_control_bar_sprite()
+    return nil if mouse_position[:X] < bar.x
+    return nil if mouse_position[:X] > bar.x + bar.bitmap.width
+    return nil if mouse_position[:Y] < bar.y
+    return nil if mouse_position[:Y] > bar.y + bar.bitmap.height
+    # return Graphics.mouse_send_fake_input(Input::Z) if mouse_position[:X] > 404 # Quicksave
+    # return Graphics.mouse_send_fake_input(Input::E) if mouse_position[:X] > 305 # Toggle turbo
+    # return Graphics.mouse_send_fake_input(Input::B) if mouse_position[:X] > 208 # Pause menu
+    # return Graphics.mouse_send_fake_input(Input::X) if mouse_position[:X] > 110 # Mega
+    # return Graphics.mouse_send_fake_input(Input::Y) # Ready menu
+    # return Mouse::Sauiw::set_callback(:CLICK_Z) if mouse_position[:X] > 404 # Quicksave
+    return :QUICKSAVE if mouse_position[:X] > 404 # Quicksave
+    return :CLICK_E if mouse_position[:X] > 305 # Toggle turbo
+    return :EXIT_SCREEN if mouse_position[:X] > 208 # Pause menu
+    return :CLICK_X if mouse_position[:X] > 110 # Mega
+    return :CLICK_Y # Ready menu
   end
   #####/MODDED
 end
@@ -321,7 +442,7 @@ module Input
     #####MODDED
     # The purpose of this is to make the right mouse click behave consistently like the Cancel keypress (default ESC)
     # This method is not in the game scripts - we're replacing a method of a base Ruby module
-    return true if (button == Input::B) && Input.pressex?(Input::RightMouseKey)
+    return true if (button == Input::B) && (Input.pressex?(Input::RightMouseKey) || Mouse::Sauiw::check_and_reset_callback(:EXIT_SCREEN))
     #####/MODDED
     return self.mouse_old_input_press?(button)
   end
@@ -332,6 +453,10 @@ module Input
     end
   end
   def self.repeat?(button)
+    #####MODDED
+    fake_input = Mouse::Sauiw::check_fake_input(button, :repeat)
+    return fake_input if !fake_input.nil?
+    #####/MODDED
     retval = self.mouse_old_input_repeat?(button)
     #####MODDED
     # This method is not in the game scripts - we're replacing a method of a base Ruby module
@@ -351,7 +476,7 @@ module Input
     #####MODDED
     # The purpose of this is to intercept keypress checks and interpret it as mouse clicks when appropriate
     # This method is not in the game scripts - we're replacing a method of a base Ruby module
-    mouse_result = Mouse::Sauiw::handle_callbacks(button)
+    mouse_result = Mouse::Sauiw::handle_trigger_callbacks(button)
     return mouse_result if !mouse_result.nil?
     #####/MODDED
     return self.mouse_old_input_trigger?(button)
@@ -389,6 +514,8 @@ module Mouse
         :MOVEMENT_RIGHT,
         :MOVEMENT_UP
       )
+      return if Mouse::Sauiw::check_callback(:INTERCEPT_CLICK)
+      return if Mouse::Sauiw::check_callback(:SHOW_CONTROL_BAR)
       return false if !Input.pressex?(Input::LeftMouseKey)
       return nil if Mouse::Sauiw::player_should_not_move?
       mouse_coordinates = Mouse::Sauiw::get_cursor_coordinates_on_screen()
