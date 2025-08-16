@@ -43,8 +43,12 @@ Every component is **stand-alone**, and can be used on its own; please refer to 
  
 <details>
 
-* "**SWM - AutoDex**": this mod automatically updates your Pokedex by marking all species and forms in an evolutionary line as seen and captured whenever you catch a new Pokemon.
-The evolutionary line of event Pokemon will be updated after the next battle.
+* "**SWM - AAA**": this mod is a trap. It only exists to crash the game for people who dump everything in without reading the Readme.<br />
+Please don't warn other players about this - doing so defeats the purpose of this mod.
+<br />
+
+* "**SWM - AutoDex**": this mod automatically updates your Pokedex by marking all species and forms in an evolutionary line as seen and captured whenever you catch a new Pokemon.<br />
+The evolutionary line of event Pokemon will be updated after the next battle.<br />
 Notifications for added entries can be enabled by editing the "SWM - AutoDex.rb" file and setting the global variable "$swm_autoDex_showNotification" at the start to true.
 <br />
 
@@ -55,7 +59,7 @@ Notifications for added entries can be enabled by editing the "SWM - AutoDex.rb"
 <br />
 
 * "**SWM - EvOverflow**": if your mon's EV in any stat would go over 252, without breaking the 510 overall limit, then you are offered the choice to improve its IV, at the cost of resetting that EV.<br />
-If instead you use friendship berries at 0 EV you are offered the choice to reduce the IV.
+If instead you use friendship berries at 0 EV you are offered the choice to reduce the IV.<br />
 Use the password "noevcap" to disable EVs being lowered to make room for new gains when reaching the 510 overall limit.
 <br />
 
@@ -91,7 +95,7 @@ They also act like a decentralized unit: their catch rate is a lot lower than th
 (Their catch rate with the mod becomes the same as the vanilla one when you have 50 of them in your bag)
 <br />
 
-* "**SWM - SharedPC**" makes the last box in the PC shared amongst savegames: mons you put in it will be there if you start a new game or load a different savegame.
+* "**SWM - SharedPC**" makes the last box in the PC shared amongst savegames: mons you put in it will be there if you start a new game or load a different savegame.<br />
 If updating from E18: please note that you have to load up your latest savegame and save once in E19 in order to use the Shared Box in a new game.
 <br />
 
@@ -156,6 +160,9 @@ If there's any I forgot about, sorry; simply ask about them.
 ## <span style="color:orange"> **Changelog** </span>
  
 <details>
+
+v94
+* Resurrected AAA to try and give the devs some relief from random ConsistentRandomness installs.
 
 v93
 * Bugfix for ChooseStarter.
