@@ -157,6 +157,9 @@ If there's any I forgot about, sorry; simply ask about them.
  
 <details>
 
+v93
+* Bugfix for ChooseStarter.
+
 v92
 * Bugfix for SharedPC on JoiPlay.
 

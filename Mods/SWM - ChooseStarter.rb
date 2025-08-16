@@ -314,6 +314,7 @@ class PokemonScreen
     pkmn.makeUnmega if pkmn.isMega? # Mega
     pkmn.name = getMonName(newSpecies, newForm) if pkmn.name == getMonName(oldSpecies, oldForm) # Name
     swm_updateMoves(pkmn) # Moves
+    swm_updateAbility(pkmn) # Ability
     pkmn.calcStats # Stats
   end
 
@@ -349,6 +350,12 @@ class PokemonScreen
       pkmn.moves[i] = finalmoves[i] if finalmoves[i]
     end
     pkmn.pbRecordFirstMoves
+  end
+
+  def swm_updateAbility(pkmn)
+    abil_list = pkmn.getAbilityList
+    new_item = rand(abil_list.length)
+    pkmn.setAbility(abil_list[new_item])
   end
 
   if !defined?(swm_chooseStarter_oldPbPokemonScreen)
